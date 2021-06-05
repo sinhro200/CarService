@@ -1,0 +1,5 @@
+﻿
+	Чтобы сделать миграцию,
+	в консоле диспетчера пакетов:
+Add-Migration MigrationName
+Update-Database
