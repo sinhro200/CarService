@@ -29,25 +29,41 @@ namespace Web.Controllers
         [Route("all")]
         public List<UserDto> AllUsers()
         {
-            _logger.LogInformation("Get all users");
-            return userService.getAllUsers();
+            _logger.LogInformation("Got req to get all users");
+            return userService.getAllItems();
         }
 
         [HttpPost]
         [Route("add")]
         public UserDto Add(UserDto user)
         {
-            _logger.LogInformation($"add user {user}");
-            return userService.addUser(user);
+            _logger.LogInformation($"Got req to add user {user}");
+            return userService.addItem(user);
         }
 
         [HttpGet]
         [Route("get/{id}")]
         public IActionResult GetById(int id)
         {
-            _logger.LogInformation($"get user by id {id}");
-            UserDto user = userService.getUser(id);
+            _logger.LogInformation($"Got req to get user by id {id}");
+            UserDto user = userService.getItem(id);
             return user == null ? NotFound() : Ok(user);
+        }
+
+        [HttpPut]
+        [Route("edit")]
+        public UserDto Edit(UserDto user)
+        {
+            _logger.LogInformation($"Got req to edit user {user}");
+            return userService.editItem(user);
+        }
+
+        [HttpDelete]
+        [Route("delete/{id}")]
+        public UserDto Delete(int id)
+        {
+            _logger.LogInformation($"Got req to delete user with id {id}");
+            return userService.deleteItem(id);
         }
     }
 }

@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список марок машин</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Список марок машин</h2>
+    <form name="itemForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group col-md-5">
+            <label for="title">Название:</label>
+            <input class="form-control" name="title" />
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
+            <a id="reset" class="btn btn-primary">Сбросить</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped  col-md-6">
+        <thead><tr><th>Id</th><th>Название</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        async function GetItems() {
+            const response = await fetch("/brand/all", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const items = await response.json();
+                console.log("Got brands from server " + JSON.stringify(items) + " as response on get all");
+                let rows = document.querySelector("tbody");
+                items.forEach(item => {
+                    rows.append(row(item));
+                });
+            }
+        }
+        async function GetItem(id) {
+            const response = await fetch("/brand/get/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                console.log("Got brand from server " + JSON.stringify(item) + " as response on get by id {" + id+"}");
+                const form = document.forms["itemForm"];
+                form.elements["id"].value = item.id;
+                form.elements["title"].value = item.title;
+            }
+        }
+        async function CreateItem(brandTitle) {
+
+            const response = await fetch("brand/add", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Title: brandTitle,
+                })
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                reset();
+                console.log("Got brand from server " + JSON.stringify(item) + " as response on create {" + brandTitle+ "}");
+                document.querySelector("tbody").append(row(item));
+            }
+        }
+        
+        async function EditItem(itemId, brandTitle) {
+            const response = await fetch("brand/edit", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Id: parseInt(itemId, 10),
+                    Title: brandTitle
+                })
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                reset();
+                console.log("Got brand from server " + JSON.stringify(item) + " as response on edit");
+                document.querySelector("tr[data-rowid='" + item.id + "']").replaceWith(row(item));
+            }
+        }
+        
+        async function DeleteItem(id) {
+            const response = await fetch("/brand/delete/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                console.log("Got brand from server " + JSON.stringify(item) + " as response on delete");
+                document.querySelector("tr[data-rowid='" + item.id + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["itemForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+        // создание строки для таблицы
+        function row(item) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", item.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(item.id);
+            tr.append(idTd);
+
+            const titleTd = document.createElement("td");
+            titleTd.append(item.title);
+            tr.append(titleTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", item.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Изменить");
+            editLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                GetItem(item.id);
+            });
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", item.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                DeleteItem(item.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        document.getElementById("reset").click(function (e) {
+
+            e.preventDefault();
+            reset();
+        })
+
+        
+        document.forms["itemForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["itemForm"];
+            const id = form.elements["id"].value;
+            const title = form.elements["title"].value;
+            if (id == 0)
+                CreateItem(title);
+            else
+                EditItem(id, title);
+        });
+
+        GetItems();
+
+    </script>
+</body>
+</html>

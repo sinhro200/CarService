@@ -11,38 +11,20 @@ using System.Threading.Tasks;
 
 namespace Business.Services
 {
-    public class UserService : IUserService
+    public class UserService : DefaultService<UserDto,User,UserService>, IUserService
     {
-        private readonly ILogger<UserService> _logger;
-        private readonly UnitOfWork repos;
 
-        public UserService(ILogger<UserService> logger, UnitOfWork repos)
-        {
-            this._logger = logger;
-            this.repos = repos;
-        }
-
-        public UserDto addUser(UserDto userDto)
-        {
-            _logger.LogInformation($"Adding user to db {userDto.Name}");
-            User result = repos.Users.Save(new User { Name = userDto.Name });
-            return new UserDto { Id = result.Id, Name = result.Name };
-        }
-
-        public List<UserDto> getAllUsers()
-        {
-            return repos.Users.FindAll().ConvertAll<UserDto>(
-                user =>
-                {
-                    return new UserDto{ Id = user.Id, Name = user.Name };
-                }
-                );
-        }
-
-        public UserDto getUser(int id)
-        {
-            User user = repos.Users.FindById(id);
-            return user == null ? null : new UserDto { Id = user.Id, Name = user.Name };
-        }
+        public UserService(ILogger<UserService> logger, UnitOfWork repos) 
+            : base(repos.Users,logger,
+                  dto =>
+                  {
+                      return new User { Id = dto.Id, Name = dto.Name };
+                  },
+                  model =>
+                  {
+                      return new UserDto { Id = model.Id, Name = model.Name };
+                  }
+                  )
+        {}
     }
 }

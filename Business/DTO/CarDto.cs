@@ -13,5 +13,10 @@ namespace Business.DTO
         public UserDto Owner { get; set; }
 
         public ModelDto Model { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Owner)}={Owner}, {nameof(Model)}={Model}}}";
+        }
     }
 }

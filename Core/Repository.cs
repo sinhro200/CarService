@@ -33,9 +33,21 @@ namespace Core
         }
 
 
-        public void Delete(T item)
+        public T Delete(T item)
         {
-            _dbSet.Remove(item);
+            T result = _dbSet.Remove(item).Entity;
+            _dbContext.SaveChanges();
+            return result;
+        }
+
+        public T Delete(int id)
+        {
+            T found = _dbSet.Find(id);
+            if (found != null)
+            {
+                return Delete(found);
+            }
+            return null;
         }
 
         public List<T> FindAll()
@@ -58,6 +70,7 @@ namespace Core
         {
             T result = _dbSet.Add(item).Entity;
             _dbContext.SaveChanges();
+            _dbContext.Entry<T>(result).State = EntityState.Detached;
             return result;
         }
 
@@ -67,10 +80,17 @@ namespace Core
             _dbContext.SaveChanges();
         }
 
-        public void Update(T item)
+        public T Update(T item)
         {
             _dbSet.Update(item);
             _dbContext.SaveChanges();
+            //_dbContext.Entry<T>(result).State = EntityState.Detached;
+            return item;
+        }
+
+        public bool Contains(T item)
+        {
+            return _dbSet.Contains<T>(item);
         }
 
     }

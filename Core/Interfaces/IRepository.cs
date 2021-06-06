@@ -8,9 +8,13 @@ namespace Core.Interfaces
     {
         T Save(T item);
 
-        void Update(T item);
+        T Update(T item);
 
-        void Delete(T item);
+        T Delete(int id);
+
+        T Delete(T item);
+
+        bool Contains(T item);
 
         void SaveAll(IEnumerable<T> items);
 

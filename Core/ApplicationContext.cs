@@ -17,7 +17,7 @@ namespace Core
         public ApplicationContext(string connectionString)
         {
             _connStr = connectionString;
-            Database.EnsureDeleted();
+            //Database.EnsureDeleted();
             Database.EnsureCreated();
         }
 

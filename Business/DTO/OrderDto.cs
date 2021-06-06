@@ -15,5 +15,10 @@ namespace Business.DTO
         public DateTime DateTime { get; set; }
 
         public List<FullServiceDto> Services { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Car)}={Car}, {nameof(DateTime)}={DateTime.ToString()}, {nameof(Services)}={Services}}}";
+        }
     }
 }

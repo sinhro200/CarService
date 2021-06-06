@@ -17,5 +17,10 @@ namespace Business.DTO
         public UserDto Mechanic { get; set; }
 
         public FullServiceStatusDto status { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(ServiceId)}={ServiceId.ToString()}, {nameof(Title)}={Title}, {nameof(Price)}={Price.ToString()}, {nameof(Mechanic)}={Mechanic}, {nameof(status)}={status}}}";
+        }
     }
 }
