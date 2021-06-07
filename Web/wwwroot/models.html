@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Список марок машин</title>
+    <title>Список моделей машин</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
     <link href="StyleSheet.css" rel="stylesheet" />
     <!-- Use this inside Head tag-->
@@ -20,13 +20,18 @@
 <body>
 
     <div id="headerContent" class="container panel-body"></div>
-
-    <h2>Список марок машин</h2>
+    
+    <h2>Список моделей машин</h2>
     <form name="itemForm">
         <input type="hidden" name="id" value="0" />
         <div class="form-group col-md-5">
             <label for="title">Название:</label>
             <input class="form-control" name="title" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="brandSelect">Выбор марки</label>
+            <select class="form-control" id="brandSelect">
+            </select>
         </div>
         <div class="panel-body">
             <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
@@ -34,63 +39,76 @@
         </div>
     </form>
     <table class="table table-condensed table-striped"><!--class="col-md-6"-->
-        <thead><tr><th>Id</th><th>Название</th><th></th></tr></thead>
+        <thead><tr><th>Id</th><th>Название</th><th>Марка</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
     <script>
         async function GetItems() {
-            const response = await fetch("/brand/all", {
+            const response = await fetch("/model/all", {
                 method: "GET",
                 headers: { "Accept": "application/json" }
             });
             if (response.ok === true) {
                 const items = await response.json();
-                console.log("Got brands from server " + JSON.stringify(items) + " as response on get all");
+                console.log("Got models from server " + JSON.stringify(items) + " as response on get all");
                 let rows = document.querySelector("tbody");
                 items.forEach(item => {
                     rows.append(row(item));
                 });
             }
+
+            loadAllBrands();
         }
         async function GetItem(id) {
-            const response = await fetch("/brand/get/" + id, {
+            const response = await fetch("/model/get/" + id, {
                 method: "GET",
                 headers: { "Accept": "application/json" }
             });
             if (response.ok === true) {
                 const item = await response.json();
-                console.log("Got brand from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
+                console.log("Got model from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
                 const form = document.forms["itemForm"];
                 form.elements["id"].value = item.id;
+                setSelectCurrentValue(item.brandDto.id, item.brandDto.title);
+                //form.elements["brandSelect"].value = item.id;
                 form.elements["title"].value = item.title;
             }
         }
-        async function CreateItem(brandTitle) {
+        async function CreateItem(modelTitle, brandId) {
 
-            const response = await fetch("brand/add", {
+            const bodyData = JSON.stringify({
+                Title: modelTitle,
+                BrandDto: {
+                    Id: brandId
+                }
+            });
+            console.log(bodyData);
+            const response = await fetch("model/add", {
                 method: "POST",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    Title: brandTitle,
-                })
+                body: bodyData
             });
             if (response.ok === true) {
                 const item = await response.json();
                 reset();
-                console.log("Got brand from server " + JSON.stringify(item) + " as response on create {" + brandTitle + "}");
+                console.log("Got brand from server " + JSON.stringify(item) + " as response on create {modelTitle:" + modelTitle + "; brandId:" + brandId + "}");
                 document.querySelector("tbody").append(row(item));
             }
         }
 
-        async function EditItem(itemId, brandTitle) {
-            const response = await fetch("brand/edit", {
+        async function EditItem(modelId, modelTitle, brandId) {
+            const bodyData = JSON.stringify({
+                Id: modelId,
+                Title: modelTitle,
+                BrandDto: {
+                    Id: brandId
+                }
+            });
+            const response = await fetch("model/edit", {
                 method: "PUT",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    Id: parseInt(itemId, 10),
-                    Title: brandTitle
-                })
+                body: bodyData
             });
             if (response.ok === true) {
                 const item = await response.json();
@@ -101,7 +119,7 @@
         }
 
         async function DeleteItem(id) {
-            const response = await fetch("/brand/delete/" + id, {
+            const response = await fetch("/model/delete/" + id, {
                 method: "DELETE",
                 headers: { "Accept": "application/json" }
             });
@@ -131,6 +149,10 @@
             titleTd.append(item.title);
             tr.append(titleTd);
 
+            const brandTd = document.createElement("td");
+            brandTd.append(item.brandDto.title);
+            tr.append(brandTd);
+
             const linksTd = document.createElement("td");
 
             const editLink = document.createElement("a");
@@ -159,6 +181,41 @@
 
             return tr;
         }
+
+        const select = document.getElementsByTagName("select")['brandSelect'];
+
+        function clearSelect() {
+            for (let i = select.childElementCount - 1; i >= 0; i--) {
+                select.removeChild(select.children[i]);
+            };
+        }
+
+        function setSelectCurrentValue(brandId, brandTitle) {
+            for (let i = select.childElementCount - 1; i >= 0; i--) {
+                var op = select[i];
+                if (op.value == brandId)
+                    select.value = op.value
+            };
+        }
+
+        async function loadAllBrands() {
+            const select = document.getElementsByTagName("select")['brandSelect'];
+
+            const response = await fetch("/brand/all", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const items = await response.json();
+                console.log("Got brands from server " + JSON.stringify(items) + " as response on get all");
+                clearSelect();
+
+                items.forEach(item => {
+                    select.append(new Option(item.title, item.id, false, false))
+                });
+            }
+        }
+
         // сброс значений формы
         document.getElementById("reset").click(function (e) {
 
@@ -172,11 +229,14 @@
             const form = document.forms["itemForm"];
             const id = form.elements["id"].value;
             const title = form.elements["title"].value;
+            const brandId = form.elements["brandSelect"].value;
             if (id == 0)
-                CreateItem(title);
+                CreateItem(title, brandId);
             else
-                EditItem(id, title);
+                EditItem(id, title, brandId);
         });
+
+
 
         GetItems();
 

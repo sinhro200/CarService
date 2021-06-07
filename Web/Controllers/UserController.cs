@@ -38,7 +38,7 @@ namespace Web.Controllers
         public UserDto Add(UserDto user)
         {
             _logger.LogInformation($"Got req to add user {user}");
-            return userService.addItem(user);
+            return userService.addItemReturning(user);
         }
 
         [HttpGet]
@@ -55,15 +55,16 @@ namespace Web.Controllers
         public UserDto Edit(UserDto user)
         {
             _logger.LogInformation($"Got req to edit user {user}");
-            return userService.editItem(user);
+            return userService.editItemReturning(user);
         }
 
         [HttpDelete]
         [Route("delete/{id}")]
-        public UserDto Delete(int id)
+        public IActionResult Delete(int id)
         {
             _logger.LogInformation($"Got req to delete user with id {id}");
-            return userService.deleteItem(id);
+            userService.deleteItem(id);
+            return Ok();
         }
     }
 }

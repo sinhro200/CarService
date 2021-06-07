@@ -10,13 +10,13 @@ namespace Business.DTO
     {
         public int Id { get; set; }
 
-        public int BrandId { get; set; }
+        public BrandDto BrandDto { get; set; }
 
         public string Title { get; set; }
 
         public override string ToString()
         {
-            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(BrandId)}={BrandId.ToString()}, {nameof(Title)}={Title}}}";
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(BrandDto)}={BrandDto}, {nameof(Title)}={Title}}}";
         }
     }
 }

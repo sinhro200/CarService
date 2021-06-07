@@ -29,6 +29,22 @@ namespace Core
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            //modelBuilder
+            //    .Entity<Brand>()
+            //    .HasMany(b => b.Models)
+            //    .WithOne(m => m.Brand)
+            //    .HasForeignKey(m => m.BrandId);
+
+            modelBuilder
+                .Entity<Model>()
+                .HasOne(m => m.Brand)
+                .WithMany(b => b.Models)    
+                .HasForeignKey(m => m.BrandId);
+
+            modelBuilder.Entity<Model>()
+                .Navigation(m => m.Brand)
+                .UsePropertyAccessMode(PropertyAccessMode.Property);
+
             modelBuilder
                 .Entity<Order>()
                 .HasMany(c => c.Services)
@@ -42,8 +58,7 @@ namespace Core
                     .HasOne(pt => pt.Order)
                     .WithMany(p => p.OrderServices)
                     .HasForeignKey(os => os.OrderId),
-                j =>
-                {
+                j => {
                     //j.Property(pt => pt.UserServices).HasDefaultValueSql("CURRENT_TIMESTAMP");
                     //j.Property(pt => pt.Mark).HasDefaultValue(3);
                     j.HasKey(t => new { t.OrderId, t.ServiceId});
@@ -62,6 +77,16 @@ namespace Core
                 .IsRequired()
                 .HasForeignKey(c => c.OwnerId)
                 .IsRequired();
+
+            modelBuilder
+                .Entity<Car>()
+                .HasOne(c => c.Model)
+                .WithMany(m => m.Cars);
+
+            modelBuilder
+                .Entity<Model>()
+                .HasMany(m => m.Cars)
+                .WithOne(c => c.Model);
         }
     }
 }

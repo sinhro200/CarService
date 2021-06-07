@@ -18,12 +18,41 @@ namespace Business.Services
             : base(repos.Users,logger,
                   dto =>
                   {
-                      return new User { Id = dto.Id, Name = dto.Name };
+                      return new User { 
+                          Id = dto.Id, 
+                          Name = dto.Name,
+                          Cars = dto.Cars == null ? null : dto.Cars.ConvertAll(cdto =>
+                          {
+                              return new Car { Id = cdto.Id, ModelId = cdto.Model.Id, OwnerId = dto.Id };
+                          })
+                      };
                   },
                   model =>
                   {
-                      return new UserDto { Id = model.Id, Name = model.Name };
-                  }
+                      UserDto user = new UserDto { Id = model.Id, Name = model.Name };
+                      List<CarDto> userCars = model.Cars.ConvertAll(c =>
+                      {
+                          CarDto carDto = new CarDto
+                          {
+                              Id = c.Id,
+                              Model = new ModelDto
+                              {
+                                  Id = c.Model.Id,
+                                  BrandDto = new BrandDto
+                                  {
+                                      Id = c.Model.Brand.Id,
+                                      Title = c.Model.Brand.Title
+                                  },
+                                  Title = c.Model.Title
+                              },
+                              Owner = user
+                          };
+                          return carDto;
+                      });
+                      UserDto userNew = new UserDto { Id = model.Id, Name = model.Name, Cars = userCars };
+                      return userNew;
+                  },
+                  user => user.Id
                   )
         {}
     }

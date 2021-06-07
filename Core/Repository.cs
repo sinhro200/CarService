@@ -22,7 +22,7 @@ namespace Core
         {
             _dbContext = context;
             this.includes = includes;
-            _dbSet = context.Set<T>() ;
+            _dbSet = context.Set<T>();
         }
 
         public IQueryable<T> WithAllIncludes()
@@ -35,9 +35,9 @@ namespace Core
 
         public T Delete(T item)
         {
-            T result = _dbSet.Remove(item).Entity;
+            _dbSet.Remove(item);
             _dbContext.SaveChanges();
-            return result;
+            return item;
         }
 
         public T Delete(int id)
@@ -60,7 +60,19 @@ namespace Core
             return WithAllIncludes().AsNoTracking<T>().Where(predicate).ToList<T>();
         }
 
-        public T FindById(int id)
+        public T SingleOrNull(Func<T, bool> predicate)
+        {
+            try{
+                //return WithAllIncludes().AsNoTracking<T>().Single(predicate);
+                return WithAllIncludes().Single(predicate);
+            } catch(Exception e)
+            {
+                Console.WriteLine("Exc in repo." + e);
+                return null;
+            }
+        }
+
+        public T FindByIdWithoutIncludes(int id)
         {
             return _dbSet.Find(id);
         }
@@ -68,10 +80,9 @@ namespace Core
 
         public T Save(T item)
         {
-            T result = _dbSet.Add(item).Entity;
+            T ent = _dbSet.Add(item).Entity;
             _dbContext.SaveChanges();
-            _dbContext.Entry<T>(result).State = EntityState.Detached;
-            return result;
+            return ent;
         }
 
         public void SaveAll(IEnumerable<T> items)
@@ -84,7 +95,6 @@ namespace Core
         {
             _dbSet.Update(item);
             _dbContext.SaveChanges();
-            //_dbContext.Entry<T>(result).State = EntityState.Detached;
             return item;
         }
 

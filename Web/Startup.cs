@@ -37,6 +37,8 @@ namespace Web
             });
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IBrandService, BrandService>();
+            services.AddScoped<IModelService, ModelService>();
+            services.AddScoped<ICarService, CarService>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

@@ -18,7 +18,10 @@ namespace Core.Interfaces
 
         void SaveAll(IEnumerable<T> items);
 
-        T FindById(int id);
+        T FindByIdWithoutIncludes(int id);
+
+        public T SingleOrNull(Func<T, bool> predicate);
+        
 
         List<T> FindAll();
 

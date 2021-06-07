@@ -22,7 +22,7 @@ namespace Business.Services
             this.repos = repos;
         }
 
-        public UserDto addItem(UserDto userDto)
+        public UserDto addItemReturning(UserDto userDto)
         {
             _logger.LogInformation($"Adding user to db {userDto}");
             User result = repos.Users.Save(new User { Name = userDto.Name });
@@ -31,11 +31,11 @@ namespace Business.Services
 
         public UserDto getItem(int id)
         {
-            User user = repos.Users.FindById(id);
+            User user = repos.Users.FindByIdWithoutIncludes(id);
             return user == null ? null : new UserDto { Id = user.Id, Name = user.Name };
         }
 
-        public UserDto editItem(UserDto userDto)
+        public UserDto editItemReturning(UserDto userDto)
         {
             User user = new User { Id = userDto.Id, Name = userDto.Name };
             if (repos.Users.Contains(user))
@@ -47,9 +47,9 @@ namespace Business.Services
             return null;
         }
 
-        public UserDto deleteItem(int id)
+        public UserDto deleteItemReturning(int id)
         {
-            if (repos.Users.FindById(id) != null)
+            if (repos.Users.FindByIdWithoutIncludes(id) != null)
             {
                 User res = repos.Users.Delete(id);
                 return new UserDto { Id = res.Id, Name = res.Name };
@@ -66,6 +66,21 @@ namespace Business.Services
                     return new UserDto { Id = user.Id, Name = user.Name };
                 }
                 );
+        }
+
+        public void addItem(UserDto itemDto)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void editItem(UserDto itemDto)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void deleteItem(int id)
+        {
+            throw new NotImplementedException();
         }
     }
 }

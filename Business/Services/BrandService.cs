@@ -15,10 +15,11 @@ namespace Business.Services
                   {
                       return new Brand { Id = dto.Id, Title = dto.Title };
                   },
-                  model =>
+                  brand =>
                   {
-                      return new BrandDto { Id = model.Id, Title = model.Title};
-                  }
+                      return new BrandDto { Id = brand.Id, Title = brand.Title};
+                  },
+                  brand => brand.Id
                   )
         { }
     }

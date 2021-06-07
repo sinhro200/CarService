@@ -38,7 +38,7 @@ namespace Web.Controllers
         public BrandDto Add(BrandDto dto)
         {
             _logger.LogInformation($"Got req to add brand {dto}");
-            return brandService.addItem(dto);
+            return brandService.addItemReturning(dto);
         }
 
         [HttpGet]
@@ -55,7 +55,7 @@ namespace Web.Controllers
         public IActionResult Edit(BrandDto dto)
         {
             _logger.LogInformation($"Got req to edit brand {dto}");
-            BrandDto res = brandService.editItem(dto);
+            BrandDto res = brandService.editItemReturning(dto);
             return Ok(res);
         }
 
@@ -64,8 +64,8 @@ namespace Web.Controllers
         public IActionResult Delete(int id)
         {
             _logger.LogInformation($"Got req to delete brand with id {id}");
-            BrandDto res = brandService.deleteItem(id);
-            return Ok(res);
+            brandService.deleteItem(id);
+            return Ok();
         }
     }
 }

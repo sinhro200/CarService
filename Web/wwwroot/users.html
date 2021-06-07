@@ -4,9 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>Список пользователей</title>
+
+    <link href="StyleSheet.css" rel="stylesheet" />
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(function () {
+            $("#headerContent").load("headerContent.html");
+        });
+    </script>
 </head>
 <body>
+    <div id="headerContent" class="container panel-body"></div>
+
     <h2>Список пользователей</h2>
     <form name="userForm">
         <input type="hidden" name="id" value="0" />
@@ -14,13 +30,18 @@
             <label for="name">Имя:</label>
             <input class="form-control" name="name" />
         </div>
+        <div class="form-group col-md-5" >
+            <label for="autoSelect">Авто</label>
+            <select class="form-control" multiple="multiple" id="autoSelect">
+            </select>
+        </div>
         <div class="panel-body">
             <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
             <a id="reset" class="btn btn-primary">Сбросить</a>
         </div>
     </form>
-    <table class="table table-condensed table-striped  col-md-6">
-        <thead><tr><th>Id</th><th>Имя</th><th></th></tr></thead>
+    <table class="table table-condensed table-striped">
+        <thead><tr><th>Id</th><th>Имя</th><th>Машины</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
@@ -52,7 +73,7 @@
             });
             if (response.ok === true) {
                 const user = await response.json();
-                console.log("Got user from server " + JSON.stringify(user) + " as response on get by id {" + id+"}");
+                console.log("Got user from server " + JSON.stringify(user) + " as response on get by id {" + id + "}");
                 const form = document.forms["userForm"];
                 form.elements["id"].value = user.id;
                 form.elements["name"].value = user.name;
@@ -60,18 +81,17 @@
         }
         // Добавление пользователя
         async function CreateUser(userName) {
-
             const response = await fetch("user/add", {
                 method: "POST",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    Name: userName,
+                    Name: userName
                 })
             });
             if (response.ok === true) {
                 const user = await response.json();
                 reset();
-                console.log("Got user from server " + JSON.stringify(user) + " as response on create {" + userName+ "}");
+                console.log("Got user from server " + JSON.stringify(user) + " as response on create {" + userName + "}");
                 document.querySelector("tbody").append(row(user));
             }
         }
@@ -99,9 +119,8 @@
                 headers: { "Accept": "application/json" }
             });
             if (response.ok === true) {
-                const user = await response.json();
-                console.log("Got user from server " + JSON.stringify(user) + " as response on delete");
-                document.querySelector("tr[data-rowid='" + user.id + "']").remove();
+                console.log("Got OK from server as response on delete");
+                document.querySelector("tr[data-rowid='" + id + "']").remove();
             }
         }
 
@@ -125,6 +144,15 @@
             nameTd.append(user.name);
             tr.append(nameTd);
 
+            const carsTd = document.createElement("td");
+            let carsStr = "";
+            if (user.cars != null)
+                for (let c of user.cars) {
+                    carsStr += c.model.brandDto.title + " " + c.model.title + ", ";
+                }
+            carsTd.append(carsStr);
+            tr.append(carsTd);
+
             const linksTd = document.createElement("td");
 
             const editLink = document.createElement("a");
@@ -137,6 +165,13 @@
                 GetUser(user.id);
             });
             linksTd.append(editLink);
+
+            const editCarsLink = document.createElement("a");
+            editCarsLink.setAttribute("data-id", user.id);
+            editCarsLink.setAttribute("href", "/changeCars.html?userId=" + user.id);
+            editCarsLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editCarsLink.append("Изменить машины");
+            linksTd.append(editCarsLink);
 
             const removeLink = document.createElement("a");
             removeLink.setAttribute("data-id", user.id);
@@ -153,6 +188,9 @@
 
             return tr;
         }
+
+        
+
         // сброс значений формы
         document.getElementById("reset").click(function (e) {
 

@@ -13,54 +13,71 @@ namespace Business.Services
         where Dto : class
         where Model : class
     {
-        private readonly IRepository<Model> repository;
+        protected readonly IRepository<Model> repository;
         protected readonly ILogger<P> logger;
         protected readonly Func<Dto, Model> dtoToModelConverter;
         protected readonly Func<Model, Dto> modelToDtoConverter;
+        protected readonly Func<Model, int> idGetter;
 
         public DefaultService(
             IRepository<Model> repository, 
             ILogger<P> logger, 
             Func<Dto,Model> dtoToModelConverter,
-            Func<Model, Dto> modelToDtoConverter
+            Func<Model, Dto> modelToDtoConverter,
+            Func<Model, int> idGetter
             )
         {
             this.repository = repository;
             this.logger = logger;
             this.dtoToModelConverter = dtoToModelConverter;
             this.modelToDtoConverter = modelToDtoConverter;
+            this.idGetter = idGetter;
         }
-        public Dto addItem(Dto itemDto)
+        public void addItem(Dto itemDto)
         {
             //logger.LogInformation($"Invoking repository.save on item {itemDto.ToString()}");
-            Model result = repository.Save(dtoToModelConverter.Invoke(itemDto));
-            return modelToDtoConverter.Invoke(result);
+            repository.Save(dtoToModelConverter.Invoke(itemDto));
+        }
+
+        public Dto addItemReturning(Dto itemDto)
+        {
+            //logger.LogInformation($"Invoking repository.save on item {itemDto.ToString()}");
+            Model notFilled = repository.Save(dtoToModelConverter.Invoke(itemDto));
+            Model withIncludes = repository.SingleOrNull(m => idGetter.Invoke(m) == idGetter.Invoke(notFilled));
+            return withIncludes == null ? null : modelToDtoConverter.Invoke(withIncludes);
         }
 
         public Dto getItem(int id)
         {
-            Model model = repository.FindById(id);
-            return model == null ? null : modelToDtoConverter.Invoke(model);
+            Model withIncludes = repository.SingleOrNull(m => idGetter.Invoke(m) == id);
+            return withIncludes == null ? null : modelToDtoConverter.Invoke(withIncludes);
         }
 
-        public Dto deleteItem(int id)
+        public void deleteItem(int id)
         {
-            if (repository.FindById(id) != null)
+            if (repository.FindByIdWithoutIncludes(id) != null)
             {
-                Model res = repository.Delete(id);
-                return modelToDtoConverter.Invoke(res);
+                repository.Delete(id);
             }
-
-            return null;
         }
 
-        public Dto editItem(Dto itemDto)
+        public void editItem(Dto itemDto)
         {
             Model model = dtoToModelConverter.Invoke(itemDto);
             if (repository.Contains(model))
             {
                 Model res = repository.Update(model);
-                return modelToDtoConverter.Invoke(res);
+            }
+        }
+
+        public Dto editItemReturning(Dto itemDto)
+        {
+            Model model = dtoToModelConverter.Invoke(itemDto);
+            if (repository.Contains(model))
+            {
+                Model withoutIncludes = repository.Update(model);
+                Model withIncludes = repository.SingleOrNull(m => idGetter.Invoke(m) == idGetter.Invoke(withoutIncludes));
+                return withIncludes == null ? null : modelToDtoConverter.Invoke(withIncludes);
             }
 
             return null;

@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список марок машин</title>
+    <link href="StyleSheet.css" rel="stylesheet" />
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(function () {
+            $("#headerContent").load("headerContent.html");
+        });
+
+
+        $(document).ready(function () {
+            $("#modelSelect").select2({
+                tags: false
+            })
+        });
+    </script>
+</head>
+<body>
+
+    <div id="headerContent" class="container panel-body"></div>
+
+    <h2>Машины пользователя</h2>
+    <form name="itemForm">
+        <div class="form-group col-md-5">
+            <label for="modelSelect">Выбор Машины</label>
+            <select class="form-control" id="modelSelect">
+            </select>
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Добавить</button>
+            <!--<a id="reset" class="btn btn-primary">Сбросить</a>-->
+        </div>
+    </form>
+    <table class="table table-condensed table-striped">
+        <!--class="col-md-6"-->
+        <thead><tr><th>Id</th><th>Модель</th><th>Марка</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const userId = urlParams.get('userId')
+
+        async function GetItems() {
+            const response = await fetch("/user/get/" + userId, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const user = await response.json();
+                console.log("Got user from server " + JSON.stringify(user) + " as response on get user by id " + userId);
+                let rows = document.querySelector("tbody");
+                if (user.cars != null) {
+                    user.cars.forEach(item => {
+                        rows.append(row(item));
+                    });
+                }
+            }
+        }
+        //async function GetItem(id) {
+        //    const response = await fetch("/brand/get/" + id, {
+        //        method: "GET",
+        //        headers: { "Accept": "application/json" }
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
+        //        const form = document.forms["itemForm"];
+        //        form.elements["id"].value = item.id;
+        //        form.elements["title"].value = item.title;
+        //    }
+        //}
+        async function CreateItem(ownerId, modelId) {
+
+            const response = await fetch("car/add", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Owner: { Id: ownerId },
+                    Model: { Id: modelId }
+                })
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                reset();
+                console.log("Got car from server " + JSON.stringify(item) + " as response on create {ownerId:" + ownerId + ", " + modelId + "}");
+                document.querySelector("tbody").append(row(item));
+            }
+        }
+
+        //async function EditItem(itemId, brandTitle) {
+        //    const response = await fetch("brand/edit", {
+        //        method: "PUT",
+        //        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        //        body: JSON.stringify({
+        //            Id: parseInt(itemId, 10),
+        //            Title: brandTitle
+        //        })
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        reset();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on edit");
+        //        document.querySelector("tr[data-rowid='" + item.id + "']").replaceWith(row(item));
+        //    }
+        //}
+
+        async function DeleteItem(carid) {
+            const response = await fetch("/car/delete/" + carid, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                console.log("Got OK from server as response on delete car with id " + carid);
+                document.querySelector("tr[data-rowid='" + carid + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["itemForm"];
+            form.reset();
+        }
+        // создание строки для таблицы
+        function row(item) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", item.id);
+
+            //car id
+            const idTd = document.createElement("td");
+            idTd.append(item.id);
+            tr.append(idTd);
+
+            //car model
+            const modelTd = document.createElement("td");
+            modelTd.append(item.model.title);
+            tr.append(modelTd);
+
+            //car brand
+            const brandTd = document.createElement("td");
+            brandTd.append(item.model.brandDto.title);
+            tr.append(brandTd);
+
+            const linksTd = document.createElement("td");
+
+            //const editLink = document.createElement("a");
+            //editLink.setAttribute("data-id", item.id);
+            //editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            //editLink.append("Изменить");
+            //editLink.addEventListener("click", e => {
+
+            //    e.preventDefault();
+            //    GetItem(item.id);
+            //});
+            //linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", item.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                //car id
+                DeleteItem(item.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        //document.getElementById("reset").click(function (e) {
+
+        //    e.preventDefault();
+        //    reset();
+        //})
+
+        function clearAutoSelect() {
+            $("#modelSelect").html('').select2({ data: [{ id: '', text: '' }] });
+        }
+
+        async function loadAutoSelect() {
+            const response = await fetch("model/all", {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            if (response.ok === true) {
+                const models = await response.json();
+                clearAutoSelect();
+                console.log("Got models from server " + JSON.stringify(models) + " as response on get all");
+                var autoSelectDatas = [];
+                for (let m of models) {
+                    const title = m.title;
+                    const brandTitle = m.brandDto.title;
+                    autoSelectDatas.push(
+                        {
+                            id: m.id,
+                            text: brandTitle + " " + title
+                        }
+                    )
+                }
+                $("#modelSelect").select2({
+                    data: autoSelectDatas
+                })
+            }
+        }
+
+
+        document.forms["itemForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            //const form = document.forms["itemForm"];
+            const selectedModelsOptions = $("#modelSelect").select2('data');
+            const modelIds = selectedModelsOptions.map(el => el.id);
+
+            //if (id == 0)
+            CreateItem(userId, modelIds[0]);
+            //else
+            //    EditItem(ownerId, modelIds);
+        });
+
+        loadAutoSelect();
+        GetItems();
+
+    </script>
+</body>
+</html>

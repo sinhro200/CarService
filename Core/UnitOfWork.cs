@@ -35,7 +35,7 @@ namespace Core
                 if (_userRepository == null)
                     _userRepository = new Repository<User>(_context,
                         ds => {
-                            return ds.Include(u=>u.Cars);
+                            return ds.Include(u=>u.Cars).ThenInclude(c=>c.Model).ThenInclude(m=>m.Brand);
                         }
                         );
                 return _userRepository;
@@ -49,8 +49,12 @@ namespace Core
                 if (_carRepository == null)
                     _carRepository = new Repository<Car>(_context,
                         ds => {
-                            return ds.Include(c => c.Model)
-                              .Include(c => c.Owner);
+                            return ds.Include(c => c.Owner)
+                                .ThenInclude(u=>u.Cars)
+                                .ThenInclude(c=>c.Model)
+                                .ThenInclude(m=>m.Brand)
+                                .Include(c => c.Model)
+                                .ThenInclude(m=>m.Brand);
                         }
                         );
                 return _carRepository;
@@ -64,9 +68,9 @@ namespace Core
                 if (_modelRepository == null)
                     _modelRepository = new Repository<Model>(_context,
                         ds => {
-                            ds.Include(m => m.Brand);
-                            ds.Include(m => m.Cars);
-                            return ds;
+                            return ds.Include(m => m.Brand)
+                                    .Include(m => m.Cars);
+                            
                         }
                         );
                 return _modelRepository;
@@ -78,7 +82,12 @@ namespace Core
             get
             {
                 if (_brandRepository == null)
-                    _brandRepository = new Repository<Brand>(_context);
+                    _brandRepository = new Repository<Brand>(_context,
+                        ds =>
+                        {
+                            return ds.Include(b=>b.Models);
+                        }
+                        );
                 return _brandRepository;
             }
         }
@@ -88,7 +97,13 @@ namespace Core
             get
             {
                 if (_orderRepository == null)
-                    _orderRepository = new Repository<Order>(_context);
+                    _orderRepository = new Repository<Order>(_context,
+                        ds =>
+                        {
+                            return ds.Include(o => o.OrderServices)
+                                    .Include(o=>o.Services)
+                                    .Include(o=>o.Car);
+                        });
                 return _orderRepository;
             }
         }
@@ -98,7 +113,12 @@ namespace Core
             get
             {
                 if (_mechanicRepository == null)
-                    _mechanicRepository = new Repository<Mechanic>(_context);
+                    _mechanicRepository = new Repository<Mechanic>(_context,
+                        ds =>
+                        {
+                            return ds.Include(m => m.Cars)
+                                    .Include(m => m.Services);
+                        });
                 return _mechanicRepository;
             }
         }
@@ -108,7 +128,11 @@ namespace Core
             get
             {
                 if (_statusRepository == null)
-                    _statusRepository = new Repository<OrderServiceStatus>(_context);
+                    _statusRepository = new Repository<OrderServiceStatus>(_context,
+                        ds =>
+                        {
+                            return ds.Include(oss => oss.OrderServices);
+                        });
                 return _statusRepository;
             }
         }
@@ -118,7 +142,13 @@ namespace Core
             get
             {
                 if (_serviceRepository == null)
-                    _serviceRepository = new Repository<Service>(_context);
+                    _serviceRepository = new Repository<Service>(_context,
+                        ds =>
+                        {
+                            return ds.Include(s => s.Mechanics)
+                            .Include(s => s.Orders)
+                            .Include(s => s.OrderServices);
+                        });
                 return _serviceRepository;
             }
         }
