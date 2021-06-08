@@ -13,6 +13,9 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+
+    
+
     <script>
         $(function () {
             $("#headerContent").load("headerContent.html");
@@ -174,19 +177,20 @@
             serviceLink.append("Обслуживание");
             linksTd.append(serviceLink);
 
-            const removeLink = document.createElement("a");
-            removeLink.setAttribute("data-id", item.id);
-            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
-            removeLink.append("Удалить");
-            removeLink.addEventListener("click", e => {
+            if (!item.orders || item.orders.length == 0) {
+                const removeLink = document.createElement("a");
+                removeLink.setAttribute("data-id", item.id);
+                removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+                removeLink.append("Удалить");
+                removeLink.addEventListener("click", e => {
 
-                e.preventDefault();
-                //car id
-                DeleteItem(item.id);
-            });
-            linksTd.append(removeLink);
-
-
+                    e.preventDefault();
+                    //car id
+                    DeleteItem(item.id);
+                });
+                linksTd.append(removeLink);
+            }
+            
             tr.appendChild(linksTd);
 
             return tr;

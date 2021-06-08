@@ -9,6 +9,6 @@ namespace Business.Interfaces
 {
     public interface IMechanicService : IDefaultService<MechanicDto>
     {
-        
+        List<FullServiceDto> AllServicesByMechanic(int mechanicId);
     }
 }

@@ -45,7 +45,8 @@ namespace Business.Services
                                   },
                                   Title = c.Model.Title
                               },
-                              Owner = user
+                              Owner = user,
+                              Orders = c.Orders == null ? null : c.Orders.ConvertAll(o => new OrderDto { Id = o.Id, IsClosed = o.IsClosed })
                           };
                           return carDto;
                       });

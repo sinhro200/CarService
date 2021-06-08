@@ -58,7 +58,7 @@
         </div>
     </form>
     <table class="table table-condensed table-striped"><!--class="col-md-6"-->
-        <thead><tr><th>Id</th><th>Машина</th><th>Услуги</th><th>Дата создания</th><th>Статус</th><th></th></tr></thead>
+        <thead><tr><th>Id</th><th>Машина</th><th>Услуги</th><th>Статус</th><th>Сумма</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
@@ -183,11 +183,11 @@
             tr.append(servicesTd);
 
             //create order datetime
-            const createDatetimeTd = document.createElement("td");
-            let createMoment = moment(item.createDateTime);
-            let createDateTime = createMoment.format("DD.MM.YYYY, HH:mm:ss");
-            createDatetimeTd.append(createDateTime);
-            tr.append(createDatetimeTd);
+            //const createDatetimeTd = document.createElement("td");
+            //let createMoment = moment(item.createDateTime);
+            //let createDateTime = createMoment.format("DD.MM.YYYY, HH:mm:ss");
+            //createDatetimeTd.append(createDateTime);
+            //tr.append(createDatetimeTd);
 
             //status with close order datetime?
             const statusTd = document.createElement("td");
@@ -200,6 +200,16 @@
             }
             tr.append(statusTd);
 
+            const sumPriceTd = document.createElement("td");
+            var sumPrice = 0;
+            for (let serv of item.services) {
+                sumPrice += serv.price;
+            }
+            sumPriceTd.append(sumPrice);
+            
+            tr.append(sumPriceTd);
+
+
             const linksTd = document.createElement("td");
 
             const editLink = document.createElement("a");
@@ -209,18 +219,20 @@
             editLink.append("Подробнее");
             linksTd.append(editLink);
 
-            const removeLink = document.createElement("a");
-            removeLink.setAttribute("data-id", item.id);
-            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
-            removeLink.append("Удалить");
-            removeLink.addEventListener("click", e => {
+            if (!item.isClosed) {
+                const removeLink = document.createElement("a");
+                removeLink.setAttribute("data-id", item.id);
+                removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+                removeLink.append("Удалить");
+                removeLink.addEventListener("click", e => {
 
-                e.preventDefault();
-                //order id
-                DeleteItem(item.id);
-            });
-
-            linksTd.append(removeLink);
+                    e.preventDefault();
+                    //order id
+                    DeleteItem(item.id);
+                });
+                linksTd.append(removeLink);
+            }
+            
             tr.appendChild(linksTd);
 
             return tr;
@@ -306,8 +318,11 @@
 
             const selectedServicesOptions = $("#serviceSelect").select2('data');
             const servicesIds = selectedServicesOptions.map(el => el.id);
+            if (servicesIds.length == 0)
+                alert("Не выбрано ни одной услуги")
+            else
             //if (id == 0)
-            CreateItem(carIds[0], servicesIds);
+                CreateItem(carIds[0], servicesIds);
             //else
             //    EditItem(ownerId, modelIds);
         });

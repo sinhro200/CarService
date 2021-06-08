@@ -2,6 +2,7 @@
 using Business.Interfaces;
 using Core;
 using Core.Entities;
+using Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,8 +14,9 @@ namespace Business.Services
 {
     public class MechanicService : DefaultService<MechanicDto,Mechanic,MechanicService>, IMechanicService
     {
-
-        public MechanicService(ILogger<MechanicService> logger, UnitOfWork repos) 
+        private IRepository<Service> serviceRepository;
+        private IOrderService orderService;
+        public MechanicService(ILogger<MechanicService> logger, UnitOfWork repos, IOrderService os) 
             : base(repos.Mechanics,logger,
                   dto =>
                   {
@@ -113,7 +115,10 @@ namespace Business.Services
                   },
                   user => user.Id
                   )
-        {}
+        {
+            serviceRepository = repos.Services;
+            this.orderService = os;
+        }
 
         public new MechanicDto editItemReturning(MechanicDto itemDto)
         {
@@ -129,5 +134,179 @@ namespace Business.Services
 
             return null;
         }
+
+        public List<FullServiceDto> AllServicesByMechanic(int mechanicId)
+        {
+            Mechanic mechanic = (repository as MechanicRepository).SingleOrNullForServices(m => m.Id == mechanicId);
+            if (mechanic == null)
+                return null;
+            List<FullServiceDto> result = new List<FullServiceDto>();
+            foreach(Service s in mechanic.Services)
+            {
+                foreach(Core.Entities.OrderService os in s.OrderServices)
+                {
+                    if(
+                        os.OrderServiceStatusId < 3 && 
+                        (os.MechanicId == null || os.MechanicId==mechanicId)
+                        )
+                    {
+                        result.Add(new FullServiceDto {
+                            ServiceId = s.Id,
+                            Mechanic = os.MechanicId == null ? null : 
+                                new MechanicDto { 
+                                    Id = (int)os.MechanicId, 
+                                    Name = (os.Mechanic == null) ? null : os.Mechanic.Name
+                                },
+                            Price = os.Price,
+                            Status = new FullServiceStatusDto { 
+                                Id = os.OrderServiceStatusId, 
+                                Title = os.OrderServiceStatus.Title
+                            },
+                            Title = s.Title,
+                            Order = new OrderDto { 
+                                Id = os.Order.Id,
+                                CreateDateTime = os.Order.OpenDateTime,
+                                ClosedDateTime = os.Order.CloseDateTime,
+                                IsClosed = os.Order.IsClosed,
+                                Car = new CarDto{
+                                    Id = os.Order.Car.Id,
+                                    Owner = new UserDto { Id = os.Order.Car.OwnerId, Name = os.Order.Car.Owner.Name },
+                                    Model = new ModelDto
+                                    {
+                                        Id = os.Order.Car.Model.Id,
+                                        Title = os.Order.Car.Model.Title,
+                                        BrandDto = new BrandDto { 
+                                            Id = os.Order.Car.Model.Brand.Id, 
+                                            Title = os.Order.Car.Model.Brand.Title
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            return result;
+        }
+
+        public FullServiceDto DoService(int mechanicId,int orderId, int serviceId)
+        {
+            Mechanic mechanic = (repository as MechanicRepository).SingleOrNullForServices(m => m.Id == mechanicId);
+            if (mechanic == null)
+                return null;
+            foreach (Service s in mechanic.Services)
+            {
+                foreach (Core.Entities.OrderService os in s.OrderServices)
+                {
+                    if (os.ServiceId == serviceId && os.OrderId == orderId)
+                    {
+                        os.MechanicId = mechanicId;
+                        os.OrderServiceStatusId = 2;
+                        serviceRepository.Update(s);
+                        return new FullServiceDto
+                        {
+                            ServiceId = s.Id,
+                            Mechanic = os.MechanicId == null ? null :
+                                new MechanicDto
+                                {
+                                    Id = (int)os.MechanicId,
+                                    Name = (os.Mechanic == null) ? null : os.Mechanic.Name
+                                },
+                            Price = os.Price,
+                            Status = new FullServiceStatusDto
+                            {
+                                Id = os.OrderServiceStatusId,
+                                Title = os.OrderServiceStatus.Title
+                            },
+                            Title = s.Title,
+                            Order = new OrderDto
+                            {
+                                Id = os.Order.Id,
+                                CreateDateTime = os.Order.OpenDateTime,
+                                ClosedDateTime = os.Order.CloseDateTime,
+                                IsClosed = os.Order.IsClosed,
+                                Car = new CarDto
+                                {
+                                    Id = os.Order.Car.Id,
+                                    Owner = new UserDto { Id = os.Order.Car.OwnerId, Name = os.Order.Car.Owner.Name },
+                                    Model = new ModelDto
+                                    {
+                                        Id = os.Order.Car.Model.Id,
+                                        Title = os.Order.Car.Model.Title,
+                                        BrandDto = new BrandDto
+                                        {
+                                            Id = os.Order.Car.Model.Brand.Id,
+                                            Title = os.Order.Car.Model.Brand.Title
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        public FullServiceDto FinishService(int mechanicId,int orderId,  int serviceId)
+        {
+            Mechanic mechanic = (repository as MechanicRepository).SingleOrNullForServices(m => m.Id == mechanicId);
+            if (mechanic == null)
+                return null;
+            foreach (Service s in mechanic.Services)
+            {
+                foreach (Core.Entities.OrderService os in s.OrderServices)
+                {
+                    if (os.ServiceId == serviceId && os.OrderId == orderId && 
+                        os.MechanicId == mechanicId )
+                    {
+                        os.OrderServiceStatusId = 3;
+                        serviceRepository.Update(s);
+                        orderService.TryCloseOrder(orderId);
+                        return new FullServiceDto
+                        {
+                            ServiceId = s.Id,
+                            Mechanic = os.MechanicId == null ? null :
+                                new MechanicDto
+                                {
+                                    Id = (int)os.MechanicId,
+                                    Name = (os.Mechanic == null) ? null : os.Mechanic.Name
+                                },
+                            Price = os.Price,
+                            Status = new FullServiceStatusDto
+                            {
+                                Id = os.OrderServiceStatusId,
+                                Title = os.OrderServiceStatus.Title
+                            },
+                            Title = s.Title,
+                            Order = new OrderDto
+                            {
+                                Id = os.Order.Id,
+                                CreateDateTime = os.Order.OpenDateTime,
+                                ClosedDateTime = os.Order.CloseDateTime,
+                                IsClosed = os.Order.IsClosed,
+                                Car = new CarDto
+                                {
+                                    Id = os.Order.Car.Id,
+                                    Owner = new UserDto { Id = os.Order.Car.OwnerId, Name = os.Order.Car.Owner.Name },
+                                    Model = new ModelDto
+                                    {
+                                        Id = os.Order.Car.Model.Id,
+                                        Title = os.Order.Car.Model.Title,
+                                        BrandDto = new BrandDto
+                                        {
+                                            Id = os.Order.Car.Model.Brand.Id,
+                                            Title = os.Order.Car.Model.Brand.Title
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
     }
 }

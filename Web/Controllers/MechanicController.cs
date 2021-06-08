@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Business;
 using Business.Interfaces;
 using Business.DTO;
+using Business.Services;
 
 namespace Web.Controllers
 {
@@ -17,12 +18,12 @@ namespace Web.Controllers
         
 
         private readonly ILogger<MechanicController> _logger;
-        private readonly IMechanicService mechanicService;
+        private readonly MechanicService mechanicService;
 
         public MechanicController(ILogger<MechanicController> logger, IMechanicService mechanicService)
         {
             _logger = logger;
-            this.mechanicService = mechanicService;
+            this.mechanicService = mechanicService as MechanicService;
         }
 
         [HttpGet]
@@ -65,6 +66,30 @@ namespace Web.Controllers
             _logger.LogInformation($"Got req to delete mechanic with id {id}");
             mechanicService.deleteItem(id);
             return Ok();
+        }
+
+        [HttpGet]
+        [Route("servicesByMechanic")]
+        public List<FullServiceDto> AllServicesByMechanic(int mechanicId)
+        {
+            _logger.LogInformation("Got req to get all services by mechanic id " + mechanicId);
+            return mechanicService.AllServicesByMechanic(mechanicId);
+        }
+
+        [HttpGet]
+        [Route("{mechanicId}/order/{orderId}/doService/{serviceId}")]
+        public FullServiceDto DoTask(int mechanicId,int orderId, int serviceId)
+        {
+            _logger.LogInformation("Got req to do service (id "+serviceId+") by mechanic (id " + mechanicId+")");
+            return mechanicService.DoService(mechanicId,orderId, serviceId);
+        }
+
+        [HttpGet]
+        [Route("{mechanicId}/order/{orderId}/finishService/{serviceId}")]
+        public FullServiceDto FinishTask(int mechanicId, int orderId, int serviceId)
+        {
+            _logger.LogInformation("Got req to finish service (id " + serviceId + ") by mechanic (id " + mechanicId + ")");
+            return mechanicService.FinishService(mechanicId, orderId, serviceId);
         }
     }
 }

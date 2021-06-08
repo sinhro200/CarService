@@ -11,5 +11,6 @@ namespace Business.Interfaces
     {
         List<OrderDto> AllOrdersForCar(int carId);
         List<FullServiceDto> ServicesForOrder(int orderId);
+        void TryCloseOrder(int orderId);
     }
 }

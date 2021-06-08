@@ -14,6 +14,8 @@ namespace Business.DTO
 
         public ModelDto Model { get; set; }
 
+        public List<OrderDto> Orders{ get; set; }
+
         public override string ToString()
         {
             return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Owner)}={Owner}, {nameof(Model)}={Model}}}";

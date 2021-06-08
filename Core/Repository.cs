@@ -126,10 +126,12 @@ namespace Core
             _dbSet.Update(item);
             //_dbContext.Entry(item).State = EntityState.Modified;
             _dbContext.SaveChanges();
-            _dbContext.Entry(item).State = EntityState.Detached;
-            _dbContext.SaveChanges();
-            _dbContext.ChangeTracker.Clear();
-            _dbContext.SaveChanges();
+
+            //_dbContext.Entry(item).State = EntityState.Detached;
+            //_dbContext.SaveChanges();
+            //_dbContext.ChangeTracker.Clear();
+            //_dbContext.SaveChanges();
+
             //EntityEntry<T> res = _dbSet.Update(item);
             //_dbContext.SaveChanges();
             //res.State = EntityState.Detached;

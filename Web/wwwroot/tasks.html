@@ -11,8 +11,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
 
-    <script src="https://momentjs.com/downloads/moment.js"></script>
-
     <script>
         $(function () {
             $("#headerContent").load("headerContent.html");
@@ -22,73 +20,60 @@
 <body>
 
     <div id="headerContent" class="container panel-body"></div>
-    <h4 id="car" ></h4>
-    <div id="creationOrderDateTimeBody">Заказ создан : <h4 id="creationOrderDateTime" style="display:inline;"></h4></div>
-    <div id="closedOrderDateTimeBody">Заказ выполнен : <h4 id="closedOrderDateTime" style="display:inline;"></h4></div>
-    <h2>Состояние обслуживания</h2>
-    <table class="table table-condensed table-striped">
-        <!--class="col-md-6"-->
-        <thead><tr><th>Id</th><th>Название услуги</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+
+    <h2>Задачи</h2>
+    <table class="table table-condensed table-striped"><!--class="col-md-6"-->
+        <thead><tr><th>Машина</th><th>Владелец</th><th>Название услуги</th><th>Статус</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
     <script>
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
-        const orderId = urlParams.get('orderId')
+        const mechanicId = urlParams.get('mechanicId')
 
         async function GetItems() {
-            const response = await fetch("/order/servicesByOrder?orderId=" + orderId, {
+            const response = await fetch("/Mechanic/servicesByMechanic?mechanicId=" + mechanicId, {
                 method: "GET",
                 headers: { "Accept": "application/json" }
             });
             if (response.ok === true) {
-                const services = await response.json();
-                console.log("Got services from server " + JSON.stringify(services) + " as response on get services by order id " + orderId);
+                const tasks = await response.json();
+                console.log("Got services from server " + JSON.stringify(tasks) + " as response on get services by mechanic id " + mechanicId);
                 let rows = document.querySelector("tbody");
-                services.forEach(item => {
-                    item.id = item.serviceId;
+                tasks.forEach(item => {
+                    serviceId = item.serviceId;
+                    orderId = item.order.id;
+                    item.id = orderId + "_" + serviceId;
                     rows.append(row(item));
                 });
             }
         }
-
-        async function GetOrderInfo() {
-            const response = await fetch("/order/get/" + orderId, {
+        async function DoTask(orderId, serviceId) {
+            const response = await fetch("/mechanic/" + mechanicId+"/order/"+orderId+"/doService/" + serviceId, {
                 method: "GET",
                 headers: { "Accept": "application/json" }
             });
             if (response.ok === true) {
                 const item = await response.json();
-                console.log("Got order from server " + JSON.stringify(item) + " as response on get by id {" + orderId + "}");
-                let createMoment = moment(item.createDateTime);
-                let createDateTime = createMoment.format("DD.MM.YYYY, HH:mm:ss");
-                $('#creationOrderDateTime')[0].innerText = createDateTime;
-                if (item.closedDateTime) {
-                    let closeMoment = moment(item.closedDateTime);
-                    let closeDateTime = closeMoment.format("DD.MM.YYYY, HH:mm:ss");
-                    $('#closedOrderDateTime')[0].innerText = closeDateTime;
-                } else {
-                    $('#closedOrderDateTimeBody').hide();
-                }
-                let model = item.car.model.title;
-                let brand = item.car.model.brandDto.title;
-                $('#car')[0].innerText = brand + " " + model;
+                console.log("Got service from server " + JSON.stringify(item) + " as response on do service id " + serviceId + ", by mechanic id " + mechanicId);
+                item.id = orderId + "_" + serviceId;
+                document.querySelector("tr[data-rowid='" + item.id + "']").replaceWith(row(item))
             }
         }
-        //async function GetItem(id) {
-        //    const response = await fetch("/brand/get/" + id, {
-        //        method: "GET",
-        //        headers: { "Accept": "application/json" }
-        //    });
-        //    if (response.ok === true) {
-        //        const item = await response.json();
-        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
-        //        const form = document.forms["itemForm"];
-        //        form.elements["id"].value = item.id;
-        //        form.elements["title"].value = item.title;
-        //    }
-        //}
+
+        async function FinishTask(orderId, serviceId) {
+            const response = await fetch("/mechanic/" + mechanicId + "/order/" + orderId + "/finishService/" + serviceId, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                console.log("Got service from server " + JSON.stringify(item) + " as response on finish service id " + serviceId + ", by mechanic id " + mechanicId);
+                item.id = orderId + "_" + serviceId;
+                document.querySelector("tr[data-rowid='" + item.id + "']").remove();
+            }
+        }
         //async function CreateItem(brandTitle) {
 
         //    const response = await fetch("brand/add", {
@@ -146,34 +131,46 @@
             const tr = document.createElement("tr");
             tr.setAttribute("data-rowid", item.id);
 
-            const idTd = document.createElement("td");
-            idTd.append(item.id);
-            tr.append(idTd);
+            //const idTd = document.createElement("td");
+            //idTd.append(item.id);
+            //tr.append(idTd);
+
+            const carTd = document.createElement("td");
+            let model = item.order.car.model.title;
+            let brand = item.order.car.model.brandDto.title;
+            carTd.append(brand + " " + model);
+            tr.append(carTd);
+
+            const ownerTd = document.createElement("td");
+            let ownerName = item.order.car.owner.name;
+            ownerTd.append(ownerName);
+            tr.append(ownerTd);
 
             const titleTd = document.createElement("td");
             titleTd.append(item.title);
             tr.append(titleTd);
 
-            const priceTd = document.createElement("td");
-            priceTd.append(item.price);
-            tr.append(priceTd);
-
             const statusTd = document.createElement("td");
-            statusTd.append(item.status.title);
+            statusTd.append(item.mechanic ? "Ваша задача" : "Ожидает механика");
             tr.append(statusTd);
 
-            //const linksTd = document.createElement("td");
+            const linksTd = document.createElement("td");
 
-            //const editLink = document.createElement("a");
-            //editLink.setAttribute("data-id", item.id);
-            //editLink.setAttribute("style", "cursor:pointer;padding:15px;");
-            //editLink.append("Изменить");
-            //editLink.addEventListener("click", e => {
-
-            //    e.preventDefault();
-            //    GetItem(item.id);
-            //});
-            //linksTd.append(editLink);
+            const doTaskLink = document.createElement("a");
+            doTaskLink.setAttribute("data-id", item.id);
+            doTaskLink.setAttribute("class", "btn btn-primary");
+            doTaskLink.setAttribute("style", "cursor:pointer;padding:15px; ");
+            doTaskLink.append(item.mechanic ? "Закончить работу" : "Начать работу");
+            doTaskLink.addEventListener("click", e => {
+                e.preventDefault();
+                //item.id в формате {%d}_{%d}
+                let [orderId, serviceId] = item.id.split("_")
+                if (item.mechanic)
+                    FinishTask(orderId, serviceId);
+                else
+                    DoTask(orderId, serviceId);
+            });
+            linksTd.append(doTaskLink);
 
             //const removeLink = document.createElement("a");
             //removeLink.setAttribute("data-id", item.id);
@@ -186,7 +183,7 @@
             //});
             //linksTd.append(removeLink);
 
-            //tr.appendChild(linksTd);
+            tr.appendChild(linksTd);
 
             return tr;
         }
@@ -210,7 +207,6 @@
         //});
 
         GetItems();
-        GetOrderInfo();
 
     </script>
 </body>

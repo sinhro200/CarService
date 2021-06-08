@@ -14,7 +14,11 @@ namespace Business.Services
             : base(repos.Cars, logger,
                   dto =>
                   {
-                      return new Car { Id = dto.Id, ModelId = dto.Model.Id, OwnerId = dto.Owner.Id };
+                      return new Car { 
+                          Id = dto.Id, 
+                          ModelId = dto.Model.Id, 
+                          OwnerId = dto.Owner.Id 
+                      };
                   },
                   car =>
                   {
@@ -24,7 +28,8 @@ namespace Business.Services
                           Owner = new UserDto { Id = car.OwnerId, Name = car.Owner.Name },
                           Model = new ModelDto { Id = car.Model.Id, Title = car.Model.Title, 
                               BrandDto = new BrandDto { Id = car.Model.Brand.Id, Title = car.Model.Brand.Title  }
-                          }
+                          },
+                          Orders = car.Orders == null ? null : car.Orders.ConvertAll(o=>new OrderDto { Id = o.Id, IsClosed = o.IsClosed})
                       };
                   },
                   brand => brand.Id

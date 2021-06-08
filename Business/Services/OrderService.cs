@@ -202,5 +202,20 @@ namespace Business.Services
                 };
             });
         }
+
+        public void TryCloseOrder(int orderId)
+        {
+            Order order = repository.SingleOrNull(o => o.Id == orderId);
+            if (order == null)
+                return;
+            foreach( Core.Entities.OrderService os in order.OrderServices)
+            {
+                if (os.OrderServiceStatusId < 3)
+                    return;
+            }
+            order.IsClosed = true;
+            order.CloseDateTime = System.DateTime.Now;
+            repository.Update(order);
+        }
     }
 }

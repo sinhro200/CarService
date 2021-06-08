@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Core
 {
-    class MechanicRepository : Repository<Mechanic>, IRepository<Mechanic>
+    public class MechanicRepository : Repository<Mechanic>, IRepository<Mechanic>
     {
         public MechanicRepository(DbContext context, ILogger log, Func<DbSet<Mechanic>, IQueryable<Mechanic>> includes = null) 
             : base(context, log, includes)
@@ -33,6 +33,37 @@ namespace Core
             _dbContext.SaveChanges();
             log.LogInformation("Successfully updated " + mechanic.ToString());
             return mechanic;
+        }
+
+        public Mechanic SingleOrNullForServices(Func<Mechanic,bool> predicate)
+        {
+            log.LogInformation("Single or null by %predicate");
+            try
+            {
+                return _dbSet.Include(m=>m.Services)
+                        .ThenInclude(s=>s.OrderServices)
+                        .ThenInclude(os=>os.Mechanic)
+                    .Include(m=>m.Services)
+                        .ThenInclude(s=>s.OrderServices)
+                        .ThenInclude(os=>os.OrderServiceStatus)
+                    .Include(m => m.Services)
+                        .ThenInclude(s => s.OrderServices)
+                        .ThenInclude(os=>os.Order)
+                        .ThenInclude(o=>o.Car)
+                        .ThenInclude(c=>c.Model)
+                        .ThenInclude(c => c.Brand)
+                    .Include(m => m.Services)
+                        .ThenInclude(s => s.OrderServices)
+                        .ThenInclude(os => os.Order)
+                        .ThenInclude(o => o.Car)
+                        .ThenInclude(c=>c.Owner)
+                    .Single(predicate);
+            }
+            catch (Exception e)
+            {
+                log.LogCritical(e, "Exc in single or null");
+                return null;
+            }
         }
     }
 }

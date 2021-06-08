@@ -39,10 +39,12 @@ namespace Core
                     _userRepository = new Repository<User>(_context,
                         loggerFactory.CreateLogger<IRepository<User>>(),
                         ds => {
-                            return ds.Include(u=>u.Cars)
-                            .ThenInclude(c=>c.Model)
-                            .ThenInclude(m=>m.Brand).AsNoTracking()
-                            
+                            return ds.Include(u => u.Cars)
+                                .ThenInclude(c => c.Model)
+                                //.ThenInclude(m => m.Brand).AsNoTracking()
+                                .ThenInclude(m => m.Brand)
+                            .Include(u => u.Cars)
+                            .ThenInclude(c=>c.Orders)
                             ;
                         }
                         );
