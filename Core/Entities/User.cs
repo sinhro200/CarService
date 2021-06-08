@@ -11,11 +11,11 @@ namespace Core.Entities
         public int Id { get; set; }
         public string Name { get; set; }
 
+        public List<Car> Cars { get; set; }
+
         public override string ToString()
         {
-            return $"{Name}";
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Name)}={Name}, {nameof(Cars)}={Cars}}}";
         }
-
-        public List<Car> Cars { get; set; }
     }
 }

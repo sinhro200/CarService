@@ -18,5 +18,10 @@ namespace Core.Entities
         public int ModelId { get; set; }
         [ForeignKey("ModelId")]
         public Model Model { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(OwnerId)}={OwnerId.ToString()}, {nameof(Owner)}={Owner}, {nameof(ModelId)}={ModelId.ToString()}, {nameof(Model)}={Model}}}";
+        }
     }
 }

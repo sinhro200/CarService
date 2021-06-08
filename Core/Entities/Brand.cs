@@ -16,7 +16,7 @@ namespace Core.Entities
 
         public override string ToString()
         {
-            return $"{Title}";
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Title)}={Title}, {nameof(Models)}={Models}}}";
         }
     }
 }

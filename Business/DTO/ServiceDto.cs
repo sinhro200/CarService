@@ -12,9 +12,11 @@ namespace Business.DTO
 
         public string Title { get; set; }
 
+        public double Price { get; set; }
+
         public override string ToString()
         {
-            return $"{{{nameof(ServiceId)}={ServiceId.ToString()}, {nameof(Title)}={Title}}}";
+            return $"{{{nameof(ServiceId)}={ServiceId.ToString()}, {nameof(Title)}={Title}, {nameof(Price)}={Price}}}";
         }
     }
 }

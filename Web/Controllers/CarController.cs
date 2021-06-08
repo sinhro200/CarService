@@ -33,6 +33,15 @@ namespace Web.Controllers
             return carService.getAllItems();
         }
 
+        [HttpGet]
+        [Route("byUser")]
+        public List<CarDto> GetByUser(int userId)
+        {
+            _logger.LogInformation("Got req to get all cars by iser id " + userId);
+            List<CarDto> cars = carService.GetByUser(userId);
+            return cars;
+        }
+
         [HttpPost]
         [Route("add")]
         public CarDto Add(CarDto dto)
@@ -46,8 +55,8 @@ namespace Web.Controllers
         public IActionResult GetById(int id)
         {
             _logger.LogInformation($"Got req to get car by id {id}");
-            CarDto brand = carService.getItem(id);
-            return brand == null ? NotFound() : Ok(brand);
+            CarDto car = carService.getItem(id);
+            return car == null ? NotFound() : Ok(car);
         }
 
         [HttpPut]

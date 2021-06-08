@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Список марок машин</title>
+    <title>Машины пользователя</title>
     <link href="StyleSheet.css" rel="stylesheet" />
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
 
@@ -167,6 +167,13 @@
             //});
             //linksTd.append(editLink);
 
+            const serviceLink = document.createElement("a");
+            serviceLink.setAttribute("href", "/carOrders.html?carId="+item.id+"&userId="+userId);
+            serviceLink.setAttribute("data-id", item.id);
+            serviceLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            serviceLink.append("Обслуживание");
+            linksTd.append(serviceLink);
+
             const removeLink = document.createElement("a");
             removeLink.setAttribute("data-id", item.id);
             removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
@@ -177,8 +184,9 @@
                 //car id
                 DeleteItem(item.id);
             });
-
             linksTd.append(removeLink);
+
+
             tr.appendChild(linksTd);
 
             return tr;
@@ -191,7 +199,8 @@
         //})
 
         function clearAutoSelect() {
-            $("#modelSelect").html('').select2({ data: [{ id: '', text: '' }] });
+            //$("#modelSelect").html('').select2({ data: [{ id: '', text: '' }] });
+            $("#modelSelect").html('').select2({ data: null });
         }
 
         async function loadAutoSelect() {

@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Core.Entities
+namespace Business.DTO
 {
-    public class Mechanic : User
+    public class MechanicDto: UserDto
     {
-        public List<Service> Services { get; set; } = new List<Service>();
+        public List<ServiceDto> Services { get; set; }
 
         public override string ToString()
         {

@@ -1,0 +1,321 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Обслуживание</title>
+    <link href="StyleSheet.css" rel="stylesheet" />
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script src="https://momentjs.com/downloads/moment.js"></script>
+
+    <script>
+        $(function () {
+            $("#headerContent").load("headerContent.html");
+        });
+
+
+        $(document).ready(function () {
+            $("#carSelect").select2({
+                tags: false,
+                placeholder: "Выберить машину",
+            })
+        });
+
+        $(document).ready(function () {
+            $("#serviceSelect").select2({
+                tags: false,
+                placeholder: "Выберите услуги",
+            })
+        });
+    </script>
+</head>
+<body>
+
+    <div id="headerContent" class="container panel-body"></div>
+
+    <h2>Заказы</h2>
+    <form name="itemForm">
+        <div class="form-group col-md-5">
+            <label for="carSelect">Выбор машины</label>
+            <select class="form-control" id="carSelect">
+            </select>
+        </div>
+        <div class="form-group col-md-5">
+            <label for="serviceSelect">Выбор услуги</label>
+            <select class="form-control" id="serviceSelect" multiple="multiple">
+            </select>
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Заказать</button>
+            <!--<a id="reset" class="btn btn-primary">Сбросить</a>-->
+        </div>
+    </form>
+    <table class="table table-condensed table-striped"><!--class="col-md-6"-->
+        <thead><tr><th>Id</th><th>Машина</th><th>Услуги</th><th>Дата создания</th><th>Статус</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const carId = urlParams.get('carId')
+        const userId = urlParams.get('userId')
+
+        async function GetItems() {
+            const response = await fetch("/Order/byCar?carId=" + carId, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const orders = await response.json();
+                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by carid " + carId);
+                let rows = document.querySelector("tbody");
+                orders.forEach(item => {
+                    rows.append(row(item));
+                });
+                
+            }
+        }
+        //async function GetItem(id) {
+        //    const response = await fetch("/brand/get/" + id, {
+        //        method: "GET",
+        //        headers: { "Accept": "application/json" }
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
+        //        const form = document.forms["itemForm"];
+        //        form.elements["id"].value = item.id;
+        //        form.elements["title"].value = item.title;
+        //    }
+        //}
+        async function CreateItem( carId, servicesIds) {
+            var servicesData = [];
+            for (let serId of servicesIds) {
+                servicesData.push(
+                    {
+                        ServiceId: serId
+                    }
+                )
+            }
+            const response = await fetch("/Order/add", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Car: { Id: carId },
+                    Services: servicesData
+                })
+            });
+            if (response.ok === true) {
+                const order = await response.json();
+                reset();
+                console.log("Got order from server " + JSON.stringify(order) + " as response on create {carid:" + carId + ", servicesIds:" + servicesIds+ "}");
+                document.querySelector("tbody").append(row(order));
+            }
+        }
+
+        //async function EditItem(itemId, brandTitle) {
+        //    const response = await fetch("brand/edit", {
+        //        method: "PUT",
+        //        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        //        body: JSON.stringify({
+        //            Id: parseInt(itemId, 10),
+        //            Title: brandTitle
+        //        })
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        reset();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on edit");
+        //        document.querySelector("tr[data-rowid='" + item.id + "']").replaceWith(row(item));
+        //    }
+        //}
+
+        async function DeleteItem(orderid) {
+            const response = await fetch("/Order/delete/" + orderid, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                console.log("Got OK from server as response on delete order with id " + orderid);
+                document.querySelector("tr[data-rowid='" + orderid + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["itemForm"];
+            form.reset();
+            $("#serviceSelect").val(null).trigger('change');
+            $("#carSelect").val(null).trigger('change');
+        }
+        // создание строки для таблицы
+        function row(item) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", item.id);
+
+            //order id
+            const idTd = document.createElement("td");
+            idTd.append(item.id);
+            tr.append(idTd);
+
+            //order car
+            const carTd = document.createElement("td");
+            const carStr = item.car.model.brandDto.title + " " + item.car.model.title;
+            carTd.append(carStr);
+            tr.append(carTd);
+
+            //order services
+            const servicesTd = document.createElement("td");
+            var servStr = "";
+            for (let s of item.services) {
+                servStr += s.title + ", ";
+            }
+            servicesTd.append(servStr);
+            tr.append(servicesTd);
+
+            //create order datetime
+            const createDatetimeTd = document.createElement("td");
+            let createMoment = moment(item.createDateTime);
+            let createDateTime = createMoment.format("DD.MM.YYYY, HH:mm:ss");
+            createDatetimeTd.append(createDateTime);
+            tr.append(createDatetimeTd);
+
+            //status with close order datetime?
+            const statusTd = document.createElement("td");
+            if (item.isClosed) {
+                let closeMoment = moment(item.closeDateTime);
+                let closeDateTime = closeMoment.format("DD.MM.YYYY, HH:mm:ss");
+                statusTd.append("Завершён " + closeDateTime);
+            } else {
+                statusTd.append("В процессе");
+            }
+            tr.append(statusTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", item.id);
+            editLink.setAttribute("href", "/userOrder.html?orderId="+item.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Подробнее");
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", item.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                //order id
+                DeleteItem(item.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        //document.getElementById("reset").click(function (e) {
+
+        //    e.preventDefault();
+        //    reset();
+        //})
+
+        function clearCarSelect() {
+            //$("#carSelect").html('').select2({ data: [{ id: '', text: '' }] });
+            $("#carSelect").html('').select2({ data: null });
+        }
+
+        async function loadCarSelect() {
+            const response = await fetch("car/byUser?userId=" + userId, {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            if (response.ok === true) {
+                const cars = await response.json();
+                console.log("Got cars from server " + JSON.stringify(cars) + " as response on get by user id " + userId);
+                var carSelectDatas = [];
+                for (let car of cars) {
+                    let model = car.model.title;
+                    let brand = car.model.brandDto.title;
+                    carSelectDatas.push(
+                        {
+                            id: car.id,
+                            text: brand + " " + model
+                        }
+                    )
+                }
+                clearCarSelect();
+                $("#carSelect").select2({
+                    data: carSelectDatas
+                })
+            }
+        }
+
+        function clearServiceSelect() {
+            //$("#serviceSelect").html('').select2({ data: [{ id: '', text: '' }] });
+            $("#serviceSelect").html('').select2({ data: null });
+        }
+
+        async function loadServiceSelect() {
+            const select = $("#serviceSelect");
+            const response = await fetch("service/byCar?carId=" + carId, {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            if (response.ok === true) {
+                const services = await response.json();
+                clearServiceSelect();
+                console.log("Got services from server " + JSON.stringify(services) + " as response on get by car id " + carId);
+                //var servicesSelectDatas = [];
+                for (let serv of services) {
+                    let title = serv.title;
+                    let price = serv.price;
+                    select.append(new Option(title + " " + price, serv.serviceId, false, false))
+                    //servicesSelectDatas.push(
+                    //    {
+                    //        id: serv.id,
+                    //        text: title + " " + price
+                    //    }
+                    //)
+                }
+
+                //$("#serviceSelect").select2({
+                //    data: servicesSelectDatas
+                //})
+            }
+        }
+
+
+        document.forms["itemForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            //const form = document.forms["itemForm"];
+            const selectedCarsOptions = $("#carSelect").select2('data');
+            const carIds = selectedCarsOptions.map(el => el.id);
+
+            const selectedServicesOptions = $("#serviceSelect").select2('data');
+            const servicesIds = selectedServicesOptions.map(el => el.id);
+            //if (id == 0)
+            CreateItem(carIds[0], servicesIds);
+            //else
+            //    EditItem(ownerId, modelIds);
+        });
+
+        loadCarSelect();
+        loadServiceSelect();
+        GetItems();
+
+    </script>
+</body>
+</html>

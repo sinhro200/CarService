@@ -12,10 +12,17 @@ namespace Core.Entities
 
         public string Title { get; set; }
 
+        public double DefaultPrice{ get; set; }
+
         public List<Mechanic> Mechanics { get; set; } = new List<Mechanic>();
 
         public List<Order> Orders { get; set; }
 
         public List<OrderService> OrderServices { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Title)}={Title}, {nameof(DefaultPrice)}={DefaultPrice.ToString()}, {nameof(Mechanics)}={Mechanics}, {nameof(Orders)}={Orders}, {nameof(OrderServices)}={OrderServices}}}";
+        }
     }
 }

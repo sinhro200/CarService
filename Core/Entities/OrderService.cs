@@ -17,8 +17,15 @@ namespace Core.Entities
 
         public double Price{ get; set; }
 
-        public Mechanic Mechanic { get; set; }
+        public int? MechanicId { get; set; }
+        public Mechanic? Mechanic { get; set; }
 
+        public int OrderServiceStatusId { get; set; } = 1;
         public OrderServiceStatus OrderServiceStatus { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(OrderId)}={OrderId.ToString()}, {nameof(Order)}={Order}, {nameof(ServiceId)}={ServiceId.ToString()}, {nameof(Service)}={Service}, {nameof(Price)}={Price.ToString()}, {nameof(MechanicId)}={MechanicId.ToString()}, {nameof(Mechanic)}={Mechanic}, {nameof(OrderServiceStatusId)}={OrderServiceStatusId.ToString()}, {nameof(OrderServiceStatus)}={OrderServiceStatus}}}";
+        }
     }
 }

@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список пользователей</title>
+
+    <link href="StyleSheet.css" rel="stylesheet" />
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(function () {
+            $("#headerContent").load("headerContent.html");
+        });
+    </script>
+</head>
+<body>
+    <div id="headerContent" class="container panel-body"></div>
+
+    <h2>Список механиков</h2>
+    <form name="userForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group col-md-5">
+            <label for="name">Имя:</label>
+            <input class="form-control" name="name" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="serviceSelect">Реализуемые услуги</label>
+            <select class="form-control" id="serviceSelect" multiple="multiple">
+            </select>
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
+            <a id="reset" class="btn btn-primary">Сбросить</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped">
+        <thead><tr><th>Id</th><th>Имя</th><th>Услуги</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+
+        async function GetMechanics() {
+            
+            const response = await fetch("/mechanic/all", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            
+            if (response.ok === true) {
+                
+                const mechanics = await response.json();
+                console.log("Got mechanics from server " + JSON.stringify(mechanics) + " as response on get all");
+                let rows = document.querySelector("tbody");
+                mechanics.forEach(item => {
+                    rows.append(row(item));
+                });
+            }
+        }
+        // Получение одного пользователя
+        async function GetMechanic(id) {
+            const response = await fetch("/mechanic/get/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const mechanic = await response.json();
+                console.log("Got mechanic from server " + JSON.stringify(mechanic) + " as response on get by id {" + id + "}");
+                const form = document.forms["userForm"];
+                form.elements["id"].value = mechanic.id;
+                form.elements["name"].value = mechanic.name;
+                let selectedServiceIds = [];
+                for (let s of mechanic.services) {
+                    selectedServiceIds.push(s.serviceId);
+                }
+                $("#serviceSelect").val(selectedServiceIds).trigger('change');
+            }
+        }
+        // Добавление пользователя
+        async function CreateMechanic(userName, servicesIds) {
+            var servicesData = [];
+            for (let serId of servicesIds) {
+                servicesData.push(
+                    {
+                        ServiceId: serId
+                    }
+                )
+            }
+            const response = await fetch("/mechanic/add", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Name: userName,
+                    Services: servicesData
+                })
+            });
+            if (response.ok === true) {
+                const mechanic = await response.json();
+                reset();
+                console.log("Got mechanic from server " + JSON.stringify(mechanic) + " as response on create {name" + userName + "; servicesIds" + servicesIds + "}");
+                document.querySelector("tbody").append(row(mechanic));
+            }
+        }
+        // Изменение пользователя
+        async function EditMechanic(userId, userName, servicesIds) {
+            var servicesData = [];
+            for (let serId of servicesIds) {
+                servicesData.push(
+                    {
+                        ServiceId: serId
+                    }
+                )
+            }
+            const response = await fetch("/mechanic/edit", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Id: parseInt(userId, 10),
+                    Name: userName,
+                    Services: servicesData
+                })
+            });
+            if (response.ok === true) {
+                const mechanic = await response.json();
+                reset();
+                console.log("Got mechanic from server " + JSON.stringify(mechanic) + " as response on edit");
+                document.querySelector("tr[data-rowid='" + mechanic.id + "']").replaceWith(row(mechanic));
+            }
+        }
+        // Удаление пользователя
+        async function DeleteMechanic(id) {
+            const response = await fetch("/mechanic/delete/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                console.log("Got OK from server as response on delete");
+                document.querySelector("tr[data-rowid='" + id + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["userForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+            form.elements["name"].value = "";
+            $("#serviceSelect").val(null).trigger('change');
+        }
+        // создание строки для таблицы
+        function row(user) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", user.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(user.id);
+            tr.append(idTd);
+
+            const nameTd = document.createElement("td");
+            nameTd.append(user.name);
+            tr.append(nameTd);
+
+            //mechanic services
+            const servicesTd = document.createElement("td");
+            var servStr = "";
+            for (let s of user.services) {
+                servStr += s.title + ", ";
+            }
+            servicesTd.append(servStr);
+            tr.append(servicesTd);
+
+            //const carsTd = document.createElement("td");
+            //let carsStr = "";
+            //if (user.cars != null)
+            //    for (let c of user.cars) {
+            //        carsStr += c.model.brandDto.title + " " + c.model.title + ", ";
+            //    }
+            //carsTd.append(carsStr);
+            //tr.append(carsTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", user.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Изменить");
+            editLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                GetMechanic(user.id);
+            });
+            linksTd.append(editLink);
+
+            //const editCarsLink = document.createElement("a");
+            //editCarsLink.setAttribute("data-id", user.id);
+            //editCarsLink.setAttribute("href", "/changeCars.html?userId=" + user.id);
+            //editCarsLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            //editCarsLink.append("Машины");
+            //linksTd.append(editCarsLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", user.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                DeleteMechanic(user.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+
+        function clearServiceSelect() {
+            //$("#serviceSelect").html('').select2({ data: [{ id: '', text: '' }] });
+            $("#serviceSelect").html('').select2({ data: null });
+        }
+
+        async function loadServiceSelect() {
+            const select = $("#serviceSelect");
+            const response = await fetch("/service/all", {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            if (response.ok === true) {
+                const services = await response.json();
+                clearServiceSelect();
+                console.log("Got services from server " + JSON.stringify(services) + " as response on get all");
+                //var servicesSelectDatas = [];
+                for (let serv of services) {
+                    let title = serv.title;
+                    select.append(new Option(title , serv.serviceId, false, false))
+                    //servicesSelectDatas.push(
+                    //    {
+                    //        id: serv.id,
+                    //        text: title + " " + price
+                    //    }
+                    //)
+                }
+
+                //$("#serviceSelect").select2({
+                //    data: servicesSelectDatas
+                //})
+            }
+        }
+        
+
+        // сброс значений формы
+        document.getElementById("reset").click(function (e) {
+
+            e.preventDefault();
+            reset();
+        })
+
+        // отправка формы
+        document.forms["userForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["userForm"];
+            const id = form.elements["id"].value;
+            const name = form.elements["name"].value;
+
+            const selectedServicesOptions = $("#serviceSelect").select2('data');
+            const servicesIds = selectedServicesOptions.map(el => el.id);
+
+            if (id == 0)
+                CreateMechanic(name, servicesIds);
+            else
+                EditMechanic(id, name, servicesIds);
+        });
+
+        loadServiceSelect();
+        GetMechanics();
+
+    </script>
+</body>
+</html>

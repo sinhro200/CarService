@@ -3,6 +3,7 @@ using Business.Interfaces;
 using Core;
 using Core.Entities;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 
 namespace Business.Services
 {
@@ -29,5 +30,11 @@ namespace Business.Services
                   brand => brand.Id
                   )
         { }
+
+        public List<CarDto> GetByUser(int userId)
+        {
+            List<Car> carsInDb = repository.FindBy(c => c.OwnerId == userId);
+            return carsInDb.ConvertAll(modelToDtoConverter.Invoke);
+        }
     }
 }

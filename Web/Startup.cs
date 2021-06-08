@@ -29,16 +29,21 @@ namespace Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddScoped(
-                iServiveProvider => {
-                    return new UnitOfWork(
-                        "Host=localhost;Port=5432;Database=carservice;Username=carservice;Password=1234;ENCODING=UTF8"
-                        );
-            });
+            //services.AddScoped(
+            //    iServiveProvider => {
+            //        return new UnitOfWork(
+            //            "Host=localhost;Port=5432;Database=carservice;Username=carservice;Password=1234;ENCODING=UTF8"
+            //            );
+            //});
+            services.AddScoped<LoggerFactory>();
+            services.AddScoped<UnitOfWork>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IBrandService, BrandService>();
             services.AddScoped<IModelService, ModelService>();
             services.AddScoped<ICarService, CarService>();
+            services.AddScoped<IServiceService, ServiceService>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IMechanicService, MechanicService>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

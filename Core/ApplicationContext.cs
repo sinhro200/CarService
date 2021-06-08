@@ -19,12 +19,14 @@ namespace Core
             _connStr = connectionString;
             //Database.EnsureDeleted();
             Database.EnsureCreated();
+            Database.Migrate();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if(!optionsBuilder.IsConfigured)
                 optionsBuilder.UseNpgsql(_connStr);
+            optionsBuilder.EnableSensitiveDataLogging();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -34,6 +36,13 @@ namespace Core
             //    .HasMany(b => b.Models)
             //    .WithOne(m => m.Brand)
             //    .HasForeignKey(m => m.BrandId);
+
+            modelBuilder.Entity<OrderServiceStatus>()
+                .HasData(
+                new { Id = 1, Title = "Ожидание" },
+                new { Id = 2, Title = "Ведутся работы" },
+                new { Id = 3, Title = "Завершено" }
+                );
 
             modelBuilder
                 .Entity<Model>()
@@ -68,7 +77,7 @@ namespace Core
 
             modelBuilder
                 .Entity<Order>()
-                .Property(o => o.DateTime).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .Property(o => o.OpenDateTime).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder
                 .Entity<User>()

@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 
 namespace Business.Interfaces
 {
-    public interface ICarService : IDefaultService<CarDto>
+    public interface IOrderService : IDefaultService<OrderDto>
     {
-        List<CarDto> GetByUser(int userId);
+        List<OrderDto> AllOrdersForCar(int carId);
+        List<FullServiceDto> ServicesForOrder(int orderId);
     }
 }

@@ -13,5 +13,10 @@ namespace Core.Entities
         public string Title { get; set; }
 
         public List<OrderService> OrderServices { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Title)}={Title}, {nameof(OrderServices)}={OrderServices}}}";
+        }
     }
 }

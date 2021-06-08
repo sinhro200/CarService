@@ -42,8 +42,13 @@ namespace Business.Services
         public Dto addItemReturning(Dto itemDto)
         {
             //logger.LogInformation($"Invoking repository.save on item {itemDto.ToString()}");
-            Model notFilled = repository.Save(dtoToModelConverter.Invoke(itemDto));
+            logger.LogDebug("Converting DTO: " + itemDto + "; to Model. ");
+            Model m = dtoToModelConverter.Invoke(itemDto);
+            logger.LogDebug("Converted to model: " + m+ ". Then saving in repo...");
+            Model notFilled = repository.Save(m);
+            logger.LogDebug("Saved in repo. Got not filled:" + notFilled);
             Model withIncludes = repository.SingleOrNull(m => idGetter.Invoke(m) == idGetter.Invoke(notFilled));
+            logger.LogDebug("Got with includes from repo:" + withIncludes + ". Returning...");
             return withIncludes == null ? null : modelToDtoConverter.Invoke(withIncludes);
         }
 

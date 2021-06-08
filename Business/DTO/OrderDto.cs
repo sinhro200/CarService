@@ -12,13 +12,17 @@ namespace Business.DTO
 
         public CarDto Car { get; set; }
 
-        public DateTime DateTime { get; set; }
+        public DateTime CreateDateTime { get; set; }
+
+        public DateTime? ClosedDateTime { get; set; }
+
+        public bool IsClosed { get; set; } = false;
 
         public List<FullServiceDto> Services { get; set; }
 
         public override string ToString()
         {
-            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Car)}={Car}, {nameof(DateTime)}={DateTime.ToString()}, {nameof(Services)}={Services}}}";
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(Car)}={Car}, {nameof(CreateDateTime)}={CreateDateTime.ToString()}, {nameof(Services)}={Services}}}";
         }
     }
 }

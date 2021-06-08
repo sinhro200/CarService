@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Услуги</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="StyleSheet.css" rel="stylesheet" />
+    <!-- Use this inside Head tag-->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
+
+    <script>
+        $(function () {
+            $("#headerContent").load("headerContent.html");
+        });
+    </script>
+</head>
+<body>
+
+    <div id="headerContent" class="container panel-body"></div>
+
+    <h2>Услуги</h2>
+    <form name="itemForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group col-md-5">
+            <label for="title">Название:</label>
+            <input class="form-control" name="title" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="price">Цена:</label>
+            <input class="form-control" name="price" type="number" />
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
+            <a id="reset" class="btn btn-primary">Сбросить</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped"><!--class="col-md-6"-->
+        <thead><tr><th>Id</th><th>Название</th><th>Цена</th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        async function GetItems() {
+            const response = await fetch("/Service/all", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const items = await response.json();
+                console.log("Got services from server " + JSON.stringify(items) + " as response on get all");
+                let rows = document.querySelector("tbody");
+                items.forEach(item => {
+                    item.id = item.serviceId;
+                    rows.append(row(item));
+                });
+            }
+        }
+        async function GetItem(id) {
+            const response = await fetch("/Service/get/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                console.log("Got service from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
+                const form = document.forms["itemForm"];
+                item.id = item.serviceId;
+                form.elements["id"].value = item.id;
+                form.elements["title"].value = item.title;
+                form.elements["price"].value = item.price;
+            }
+        }
+        async function CreateItem(title,price) {
+
+            const response = await fetch("/Service/add", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    Title: title,
+                    Price: price,
+                })
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                reset();
+                console.log("Got service from server " + JSON.stringify(item) + " as response on create {title:" + title + "; price:" + price + "}");
+                item.id = item.serviceId;
+                document.querySelector("tbody").append(row(item));
+            }
+        }
+
+        async function EditItem(itemId, title, price) {
+            let editBody = JSON.stringify({
+                ServiceId: parseInt(itemId, 10),
+                Title: title,
+                Price: price,
+            });
+            const response = await fetch("/Service/edit", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: editBody
+            });
+            if (response.ok === true) {
+                const item = await response.json();
+                reset();
+                console.log("Got service from server " + JSON.stringify(item) + " as response on edit");
+                item.id = item.serviceId;
+                document.querySelector("tr[data-rowid='" + item.id + "']").replaceWith(row(item));
+            }
+        }
+
+        async function DeleteItem(id) {
+            const response = await fetch("/Service/delete/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                console.log("Got OK from server as response on delete by id " + id);
+                document.querySelector("tr[data-rowid='" + id + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["itemForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+            form.elements["title"].value = "";
+            form.elements["price"].value = "";
+        }
+        // создание строки для таблицы
+        function row(item) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", item.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(item.id);
+            tr.append(idTd);
+
+            const titleTd = document.createElement("td");
+            titleTd.append(item.title);
+            tr.append(titleTd);
+
+            const priceTd = document.createElement("td");
+            priceTd.append(item.price);
+            tr.append(priceTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", item.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Изменить");
+            editLink.addEventListener("click", e => {
+                e.preventDefault();
+                GetItem(item.id);
+            });
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", item.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", e => {
+
+                e.preventDefault();
+                DeleteItem(item.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        document.getElementById("reset").click(function (e) {
+
+            e.preventDefault();
+            reset();
+        })
+
+
+        document.forms["itemForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["itemForm"];
+            const id = form.elements["id"].value;
+            const title = form.elements["title"].value;
+            const price = form.elements["price"].value;
+            if (id == 0)
+                CreateItem(title, price);
+            else
+                EditItem(id, title, price);
+        });
+
+        GetItems();
+
+    </script>
+</body>
+</html>

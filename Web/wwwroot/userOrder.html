@@ -1,0 +1,187 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Заказ</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="StyleSheet.css" rel="stylesheet" />
+    <!-- Use this inside Head tag-->
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.0/js/bootstrap.min.js"></script>
+
+    <script>
+        $(function () {
+            $("#headerContent").load("headerContent.html");
+        });
+    </script>
+</head>
+<body>
+
+    <div id="headerContent" class="container panel-body"></div>
+
+    <h2>Состояние обслуживания</h2>
+    <table class="table table-condensed table-striped"><!--class="col-md-6"-->
+        <thead><tr><th>Id</th><th>Название услуги</th><th>Цена(убрать?!)</th><th>Статус</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const orderId = urlParams.get('orderId')
+
+        async function GetItems() {
+            const response = await fetch("/order/servicesByOrder?orderId=" + orderId, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const services = await response.json();
+                console.log("Got services from server " + JSON.stringify(services) + " as response on get services by order id " + orderId);
+                let rows = document.querySelector("tbody");
+                services.forEach(item => {
+                    item.id = item.serviceId;
+                    rows.append(row(item));
+                });
+            }
+        }
+        //async function GetItem(id) {
+        //    const response = await fetch("/brand/get/" + id, {
+        //        method: "GET",
+        //        headers: { "Accept": "application/json" }
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on get by id {" + id + "}");
+        //        const form = document.forms["itemForm"];
+        //        form.elements["id"].value = item.id;
+        //        form.elements["title"].value = item.title;
+        //    }
+        //}
+        //async function CreateItem(brandTitle) {
+
+        //    const response = await fetch("brand/add", {
+        //        method: "POST",
+        //        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        //        body: JSON.stringify({
+        //            Title: brandTitle,
+        //        })
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        reset();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on create {" + brandTitle + "}");
+        //        document.querySelector("tbody").append(row(item));
+        //    }
+        //}
+
+        //async function EditItem(itemId, brandTitle) {
+        //    const response = await fetch("brand/edit", {
+        //        method: "PUT",
+        //        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        //        body: JSON.stringify({
+        //            Id: parseInt(itemId, 10),
+        //            Title: brandTitle
+        //        })
+        //    });
+        //    if (response.ok === true) {
+        //        const item = await response.json();
+        //        reset();
+        //        console.log("Got brand from server " + JSON.stringify(item) + " as response on edit");
+        //        document.querySelector("tr[data-rowid='" + item.id + "']").replaceWith(row(item));
+        //    }
+        //}
+
+        //async function DeleteItem(id) {
+        //    const response = await fetch("/brand/delete/" + id, {
+        //        method: "DELETE",
+        //        headers: { "Accept": "application/json" }
+        //    });
+        //    if (response.ok === true) {
+        //        console.log("Got OK from server as response on delete");
+        //        document.querySelector("tr[data-rowid='" + id + "']").remove();
+        //    }
+        //}
+
+        // сброс формы
+        //function reset() {
+        //    const form = document.forms["itemForm"];
+        //    form.reset();
+        //    form.elements["id"].value = 0;
+        //}
+        // создание строки для таблицы
+        function row(item) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", item.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(item.id);
+            tr.append(idTd);
+
+            const titleTd = document.createElement("td");
+            titleTd.append(item.title);
+            tr.append(titleTd);
+
+            const priceTd = document.createElement("td");
+            priceTd.append(item.price);
+            tr.append(priceTd);
+
+            const statusTd = document.createElement("td");
+            statusTd.append(item.status.title);
+            tr.append(statusTd);
+
+            //const linksTd = document.createElement("td");
+
+            //const editLink = document.createElement("a");
+            //editLink.setAttribute("data-id", item.id);
+            //editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            //editLink.append("Изменить");
+            //editLink.addEventListener("click", e => {
+
+            //    e.preventDefault();
+            //    GetItem(item.id);
+            //});
+            //linksTd.append(editLink);
+
+            //const removeLink = document.createElement("a");
+            //removeLink.setAttribute("data-id", item.id);
+            //removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            //removeLink.append("Удалить");
+            //removeLink.addEventListener("click", e => {
+
+            //    e.preventDefault();
+            //    DeleteItem(item.id);
+            //});
+            //linksTd.append(removeLink);
+
+            //tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        //document.getElementById("reset").click(function (e) {
+
+        //    e.preventDefault();
+        //    reset();
+        //})
+
+
+        //document.forms["itemForm"].addEventListener("submit", e => {
+        //    e.preventDefault();
+        //    const form = document.forms["itemForm"];
+        //    const id = form.elements["id"].value;
+        //    const title = form.elements["title"].value;
+        //    if (id == 0)
+        //        CreateItem(title);
+        //    else
+        //        EditItem(id, title);
+        //});
+
+        GetItems();
+
+    </script>
+</body>
+</html>

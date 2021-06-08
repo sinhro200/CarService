@@ -21,7 +21,7 @@ namespace Core.Entities
 
         public override string ToString()
         {
-            return $"{Title} {Brand}";
+            return $"{{{nameof(Id)}={Id.ToString()}, {nameof(BrandId)}={BrandId.ToString()}, {nameof(Brand)}={Brand}, {nameof(Title)}={Title}, {nameof(Cars)}={Cars}}}";
         }
     }
 }

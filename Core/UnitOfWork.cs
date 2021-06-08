@@ -1,6 +1,7 @@
 ﻿using Core.Entities;
 using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace Core
 {
     public class UnitOfWork : IDisposable
     {
+        private readonly LoggerFactory loggerFactory;
         private DbContext _context;
 
         private IRepository<User> _userRepository;
@@ -23,9 +25,10 @@ namespace Core
         private IRepository<OrderServiceStatus> _statusRepository;
 
         
-        public UnitOfWork(string connectionString)
+        public UnitOfWork(LoggerFactory loggerFactory)
         {
-            _context = new ApplicationContext(connectionString);
+            _context = new ApplicationContext("Host=localhost;Port=5432;Database=carservice;Username=carservice;Password=1234;ENCODING=UTF8");
+            this.loggerFactory = loggerFactory;
         }
 
         public IRepository<User> Users
@@ -34,8 +37,13 @@ namespace Core
             {
                 if (_userRepository == null)
                     _userRepository = new Repository<User>(_context,
+                        loggerFactory.CreateLogger<IRepository<User>>(),
                         ds => {
-                            return ds.Include(u=>u.Cars).ThenInclude(c=>c.Model).ThenInclude(m=>m.Brand);
+                            return ds.Include(u=>u.Cars)
+                            .ThenInclude(c=>c.Model)
+                            .ThenInclude(m=>m.Brand).AsNoTracking()
+                            
+                            ;
                         }
                         );
                 return _userRepository;
@@ -48,13 +56,14 @@ namespace Core
             {
                 if (_carRepository == null)
                     _carRepository = new Repository<Car>(_context,
+                        loggerFactory.CreateLogger("Repository<Car>"),
                         ds => {
                             return ds.Include(c => c.Owner)
-                                .ThenInclude(u=>u.Cars)
-                                .ThenInclude(c=>c.Model)
-                                .ThenInclude(m=>m.Brand)
+                                //.ThenInclude(u=>u.Cars)
+                                //.ThenInclude(c=>c.Model)
+                                //.ThenInclude(m=>m.Brand).AsNoTracking()
                                 .Include(c => c.Model)
-                                .ThenInclude(m=>m.Brand);
+                                .ThenInclude(m=>m.Brand).AsNoTracking();
                         }
                         );
                 return _carRepository;
@@ -67,9 +76,10 @@ namespace Core
             {
                 if (_modelRepository == null)
                     _modelRepository = new Repository<Model>(_context,
+                        loggerFactory.CreateLogger("Repository<Model>"),
                         ds => {
-                            return ds.Include(m => m.Brand)
-                                    .Include(m => m.Cars);
+                            return ds.Include(m => m.Brand).AsNoTracking()
+                                    .Include(m => m.Cars).AsNoTracking();
                             
                         }
                         );
@@ -83,9 +93,10 @@ namespace Core
             {
                 if (_brandRepository == null)
                     _brandRepository = new Repository<Brand>(_context,
+                        loggerFactory.CreateLogger("Repository<Brand>"),
                         ds =>
                         {
-                            return ds.Include(b=>b.Models);
+                            return ds.Include(b=>b.Models).AsNoTracking();
                         }
                         );
                 return _brandRepository;
@@ -98,11 +109,23 @@ namespace Core
             {
                 if (_orderRepository == null)
                     _orderRepository = new Repository<Order>(_context,
+                        loggerFactory.CreateLogger("Repository<Order>"),
                         ds =>
                         {
                             return ds.Include(o => o.OrderServices)
+                                    .ThenInclude(os=>os.Mechanic)
+                                    .Include(o => o.OrderServices)
+                                    .ThenInclude(os=>os.OrderServiceStatus)
+                                    .Include(o => o.OrderServices)
+                                    .ThenInclude(os => os.Service)
                                     .Include(o=>o.Services)
-                                    .Include(o=>o.Car);
+                                    .ThenInclude(s=>s.Mechanics)
+                                    .Include(o=>o.Car)
+                                    .ThenInclude(c=>c.Model)
+                                    .ThenInclude(m=>m.Brand)
+                                    .Include(o => o.Car)
+                                    .ThenInclude(c=>c.Owner)
+                                    ;
                         });
                 return _orderRepository;
             }
@@ -113,11 +136,15 @@ namespace Core
             get
             {
                 if (_mechanicRepository == null)
-                    _mechanicRepository = new Repository<Mechanic>(_context,
+                    _mechanicRepository = new MechanicRepository(_context,
+                        loggerFactory.CreateLogger("Repository<Mechanic>"),
                         ds =>
                         {
                             return ds.Include(m => m.Cars)
-                                    .Include(m => m.Services);
+                                    .ThenInclude(c => c.Model)
+                                    .ThenInclude(m => m.Brand).AsNoTracking()
+                                    .Include(m => m.Services).AsNoTracking()
+                                    ;
                         });
                 return _mechanicRepository;
             }
@@ -129,9 +156,11 @@ namespace Core
             {
                 if (_statusRepository == null)
                     _statusRepository = new Repository<OrderServiceStatus>(_context,
+                        loggerFactory.CreateLogger("Repository<OrderServiceStatus>"),
                         ds =>
                         {
-                            return ds.Include(oss => oss.OrderServices);
+                            return ds.Include(oss => oss.OrderServices).AsNoTracking()
+                            ;
                         });
                 return _statusRepository;
             }
@@ -143,11 +172,12 @@ namespace Core
             {
                 if (_serviceRepository == null)
                     _serviceRepository = new Repository<Service>(_context,
+                        loggerFactory.CreateLogger("Repository<Service>"),
                         ds =>
                         {
-                            return ds.Include(s => s.Mechanics)
-                            .Include(s => s.Orders)
-                            .Include(s => s.OrderServices);
+                            return ds.Include(s => s.Mechanics).AsNoTracking()
+                            .Include(s => s.Orders).AsNoTracking()
+                            .Include(s => s.OrderServices).AsNoTracking();
                         });
                 return _serviceRepository;
             }

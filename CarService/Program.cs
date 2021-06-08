@@ -10,7 +10,8 @@ namespace CarService
         {
             // получение данных
             using (UnitOfWork uow = new UnitOfWork(
-                "Host=localhost;Port=5432;Database=carservice;Username=carservice;Password=1234;ENCODING=UTF8"))
+                new Microsoft.Extensions.Logging.LoggerFactory()
+                ))
             {
                 FillDatabase(uow);
 
