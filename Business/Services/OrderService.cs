@@ -5,6 +5,7 @@ using Core;
 using Core.Entities;
 using Core.Interfaces;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -302,34 +303,65 @@ namespace Business.Services
         public MemoryStream ToXml(List<OrderDto> orders)
         {
             var workbook = new XLWorkbook();
-            var worksheet = workbook.Worksheets.Add("Лист1");
+            var worksheet = workbook.Worksheets.Add("Статистика");
 
             //создадим заголовки у столбцов
-            worksheet.Cell("A" + 1).Value = "Имя";
-            worksheet.Cell("B" + 1).Value = "Фамиля";
-            worksheet.Cell("C" + 1).Value = "Возраст";
+            worksheet.Cell("A" + 1).Value = "Id";
+            worksheet.Cell("B" + 1).Value = "Заказчик";
+            worksheet.Cell("C" + 1).Value = "Машина";
+            worksheet.Cell("D" + 1).Value = "Дата создания заказа";
+            worksheet.Cell("E" + 1).Value = "Даза закрытия заказа";
+            worksheet.Cell("F" + 1).Value = "Сумма";
 
-            // 
-
-            worksheet.Cell("A" + 2).Value = "Иван";
-            worksheet.Cell("B" + 2).Value = "Иванов";
-            worksheet.Cell("C" + 2).Value = 18;
-            //пример изменения стиля ячейки
-            worksheet.Cell("B" + 2).Style.Fill.BackgroundColor = XLColor.Red;
-
-            // пример создания сетки в диапазоне
-            var rngTable = worksheet.Range("A1:G" + 10);
+            var rngTable = worksheet.Range("A2:F" + (orders.Count+1));
             rngTable.Style.Border.RightBorder = XLBorderStyleValues.Thin;
             rngTable.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
 
-            worksheet.Columns().AdjustToContents(); //ширина столбца по содержимому
+            int row = 2;
+            double globalSum = 0;
+            foreach(OrderDto od in orders)
+            {
 
-            // вернем пользователю файл без сохранения его на сервере
+                worksheet.Cell("A" + row).Value = od.Id;
+                worksheet.Cell("B" + row).Value = od.Car.Owner.Name;
+                worksheet.Cell("C" + row).Value = od.Car.Model.BrandDto.Title + " " + od.Car.Model.Title;
+                worksheet.Cell("D" + row).Value = od.CreateDateTime.ToString("dd/MM/yyyy H:mm");
+                DateTime? closeDT = od.ClosedDateTime;
+                
+                if (closeDT != null)
+                    worksheet.Cell("E" + row).Value = closeDT.Value.ToString("dd/MM/yyyy H:mm");
+                else
+                    worksheet.Cell("E" + row).Value = "";
+                
+                double sum = 0;
+                foreach (FullServiceDto s in od.Services)
+                    sum += s.Price;
+                worksheet.Cell("F" + row).Value = sum;
+                globalSum += sum;
+                row++;
+            }
+            worksheet.Cell("E" + row).Value = "Выручка:";
+            //worksheet.Cell("F" + row).Value = ;
+            worksheet.Cell("F" + row).FormulaA1 = $"=СУММ(F2:F{(row - 1)})";
+
+            worksheet.Column("C").Width = 14;
+            worksheet.Column("D").Width = 20;
+            worksheet.Column("E").Width = 20;
+            //пример изменения стиля ячейки
+            //worksheet.Cell("B" + 2).Style.Fill.BackgroundColor = XLColor.Red;
+
+            // пример создания сетки в диапазоне
+            //var rngTable = worksheet.Range("A1:G" + 10);
+            //rngTable.Style.Border.RightBorder = XLBorderStyleValues.Thin;
+            //rngTable.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+
+            //worksheet.Columns().AdjustToContents(); //ширина столбца по содержимому
+
+
             System.IO.MemoryStream stream = new System.IO.MemoryStream();
             workbook.SaveAs(stream);
 
             return stream;
-                //return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Base.xlsx");
             
         }
     }
