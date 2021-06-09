@@ -279,8 +279,11 @@
                 EditMechanic(id, name, servicesIds);
         });
 
-        loadServiceSelect();
-        GetMechanics();
+
+        window.onload = function () {
+            loadServiceSelect();
+            GetMechanics();
+        };
 
     </script>
 </body>

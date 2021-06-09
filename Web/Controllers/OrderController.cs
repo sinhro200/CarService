@@ -84,5 +84,16 @@ namespace Web.Controllers
             orderService.deleteItem(id);
             return Ok();
         }
+
+        [HttpPost]
+        [Route("withFilters")]
+        public IActionResult GetWithFilters(OrderFilterDto orderFilterDto)
+        {
+            _logger.LogInformation($"Got req to get orders with filter :{orderFilterDto}");
+            List<OrderDto> orders = orderService.OrdersWithFilter(orderFilterDto);
+            return Ok(orders);
+        }
+
+
     }
 }

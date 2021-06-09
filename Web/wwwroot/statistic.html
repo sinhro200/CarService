@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Обслуживание</title>
+    <title>Статистика</title>
     <link href="StyleSheet.css" rel="stylesheet" />
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
 
@@ -15,26 +15,28 @@
 
     <script src="https://momentjs.com/downloads/moment.js"></script>
 
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
+    <link href="https://unpkg.com/gijgo@1.9.13/css/gijgo.min.css" rel="stylesheet" type="text/css" />
+
     <script>
         $(function () {
             $("#headerContent").load("headerContent.html");
         });
 
 
-        $(document).ready(function () {
-            $("#carSelect").select2({
-                tags: false,
-                placeholder: "Выберить машину",
-            })
-        });
 
-        $(document).ready(function () {
-            $("#serviceSelect").select2({
-                tags: false,
-                placeholder: "Выберите услуги",
-            })
-        });
+        //$(document).ready(function () {
+        //    $("#serviceSelect").select2({
+        //        tags: false,
+        //        placeholder: "Выберите услуги",
+        //    })
+        //});
     </script>
+
+    <link rel="stylesheet" type="text/css" href="/jquery.datetimepicker.css" />
+    <script src="/jquery.js"></script>
+    <script src="/build/jquery.datetimepicker.full.min.js"></script>
 </head>
 <body>
 
@@ -43,26 +45,76 @@
     <h2>Заказы</h2>
     <form name="itemForm">
         <div class="form-group col-md-5">
-            <label for="carSelect">Выбор машины</label>
-            <select class="form-control" id="carSelect">
+            <label for="userSelect"><h5>Выбор владельца</h5></label>
+            <select class="form-control" id="userSelect">
             </select>
         </div>
         <div class="form-group col-md-5">
-            <label for="serviceSelect">Выбор услуги</label>
-            <select class="form-control" id="serviceSelect" multiple="multiple">
+            <label for="modelSelect"><h5>Выбор машины</h5></label>
+            <select class="form-control" id="modelSelect">
             </select>
         </div>
+        <div class="form-group col-md-5">
+            <label for="serviceSelect"><h5>Выбор даты и времени создания</h5></label><br />
+            От <input class="list-inline-item" id="creationDatetimepickerMin" type="text" /><br />
+            До <input class="list-inline-item" id="creationDatetimepickerMax" type="text" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="serviceSelect"><h5> Выбор даты и времени закрытия</h5></label><br />
+            От <input class="list-inline-item" id="closeDatetimepickerMin" type="text" /><br />
+            До <input class="list-inline-item" id="closeDatetimepickerMax" type="text" />
+        </div>
         <div class="panel-body">
-            <button type="submit" id="submit" class="btn btn-primary">Заказать</button>
+            <button type="submit" id="submit" class="btn btn-primary">Отфильтровать</button>
             <!--<a id="reset" class="btn btn-primary">Сбросить</a>-->
         </div>
     </form>
-    <table class="table table-condensed table-striped"><!--class="col-md-6"-->
-        <thead><tr><th>Id</th><th>Машина</th><th>Услуги</th><th>Статус</th><th>Сумма</th><th></th></tr></thead>
+    <table class="table table-condensed table-striped">
+        <!--class="col-md-6"-->
+        <thead><tr><th>Владелец</th><th>Машина</th><th>Создание</th><th>Завершение</th><th>Сумма</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
     <script>
+
+        $('#creationDatetimepickerMin').datetimepicker({ footer: true, modal: true });
+        $('#creationDatetimepickerMax').datetimepicker({ footer: true, modal: true });
+
+        $('#closeDatetimepickerMin').datetimepicker({ footer: true, modal: true });
+        $('#closeDatetimepickerMax').datetimepicker({ footer: true, modal: true });
+
+        function serverStringFromPickerString(str){
+            return moment(str, "HH:mm MM DD YYYY ").format()
+        }
+
+        function getCreationDateTimeMin() {
+            let pickerValue = $('#creationDatetimepickerMin')[0].value;
+            if (pickerValue)
+                return serverStringFromPickerString(pickerValue);
+            return null;
+        }
+
+        function getCreationDateTimeMax() {
+            let pickerValue = $('#creationDatetimepickerMax')[0].value;
+            if (pickerValue)
+                return serverStringFromPickerString();
+            return null;
+        }
+
+        function getClosedDateTimeMin() {
+            let pickerValue = $('#closeDatetimepickerMin')[0].value;
+            if(pickerValue)
+                return serverStringFromPickerString(pickerValue);
+            return null;
+        }
+
+        function getClosedDateTimeMax() {
+            let pickerValue = $('#closeDatetimepickerMax')[0].value;
+            if (pickerValue)
+                return serverStringFromPickerString(pickerValue);
+            return null;
+        }
+
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         const carId = urlParams.get('carId')
@@ -80,7 +132,7 @@
                 orders.forEach(item => {
                     rows.append(row(item));
                 });
-                
+
             }
         }
         //async function GetItem(id) {
@@ -96,7 +148,7 @@
         //        form.elements["title"].value = item.title;
         //    }
         //}
-        async function CreateItem( carId, servicesIds) {
+        async function CreateItem(carId, servicesIds) {
             var servicesData = [];
             for (let serId of servicesIds) {
                 servicesData.push(
@@ -116,7 +168,7 @@
             if (response.ok === true) {
                 const order = await response.json();
                 reset();
-                console.log("Got order from server " + JSON.stringify(order) + " as response on create {carid:" + carId + ", servicesIds:" + servicesIds+ "}");
+                console.log("Got order from server " + JSON.stringify(order) + " as response on create {carid:" + carId + ", servicesIds:" + servicesIds + "}");
                 document.querySelector("tbody").append(row(order));
             }
         }
@@ -206,7 +258,7 @@
                 sumPrice += serv.price;
             }
             sumPriceTd.append(sumPrice);
-            
+
             tr.append(sumPriceTd);
 
 
@@ -214,7 +266,7 @@
 
             const editLink = document.createElement("a");
             editLink.setAttribute("data-id", item.id);
-            editLink.setAttribute("href", "/userOrder.html?orderId="+item.id);
+            editLink.setAttribute("href", "/userOrder.html?orderId=" + item.id);
             editLink.setAttribute("style", "cursor:pointer;padding:15px;");
             editLink.append("Подробнее");
             linksTd.append(editLink);
@@ -232,7 +284,7 @@
                 });
                 linksTd.append(removeLink);
             }
-            
+
             tr.appendChild(linksTd);
 
             return tr;
@@ -321,18 +373,19 @@
             if (servicesIds.length == 0)
                 alert("Не выбрано ни одной услуги")
             else
-            //if (id == 0)
+                //if (id == 0)
                 CreateItem(carIds[0], servicesIds);
             //else
             //    EditItem(ownerId, modelIds);
         });
 
-        
+
         window.onload = function () {
             loadCarSelect();
             loadServiceSelect();
             GetItems();
         };
+
     </script>
 </body>
 </html>

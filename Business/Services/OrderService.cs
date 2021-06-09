@@ -217,5 +217,31 @@ namespace Business.Services
             order.CloseDateTime = System.DateTime.Now;
             repository.Update(order);
         }
+
+        public List<OrderDto> OrdersWithFilter(OrderFilterDto orderFilterDto)
+        {
+            List<OrderDto> result = new List<OrderDto>();
+            List<Order> foundUsingFilters = repository.FindBy(ord => {
+                bool k = true;
+                if (orderFilterDto.CarModelIds != null)
+                    k = orderFilterDto.CarModelIds.Contains(ord.Car.ModelId);
+                if(orderFilterDto.OwnerIds != null)
+                    k = orderFilterDto.OwnerIds.Contains(ord.Car.OwnerId);
+
+                if (orderFilterDto.CreationDateTimeMax != null)
+                    k = ord.OpenDateTime.CompareTo(orderFilterDto.CreationDateTimeMax) < 0;
+                if (orderFilterDto.CreationDateTimeMin != null)
+                    k = ord.OpenDateTime.CompareTo(orderFilterDto.CreationDateTimeMin) > 0;
+
+                if (orderFilterDto.ClosedDateTimeMax != null)
+                    k = ord.OpenDateTime.CompareTo(orderFilterDto.ClosedDateTimeMax) < 0;
+                if (orderFilterDto.ClosedDateTimeMin != null)
+                    k = ord.OpenDateTime.CompareTo(orderFilterDto.ClosedDateTimeMin) > 0;
+
+                return k;
+            });
+
+            return foundUsingFilters.ConvertAll(modelToDtoConverter.Invoke);
+        }
     }
 }

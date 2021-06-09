@@ -28,7 +28,7 @@
     <h2>Состояние обслуживания</h2>
     <table class="table table-condensed table-striped">
         <!--class="col-md-6"-->
-        <thead><tr><th>Id</th><th>Название услуги</th><th>Цена</th><th>Статус</th><th></th></tr></thead>
+        <thead><tr><th>Название услуги</th><th>Цена</th><th>Статус</th><th>Механик</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
@@ -146,9 +146,9 @@
             const tr = document.createElement("tr");
             tr.setAttribute("data-rowid", item.id);
 
-            const idTd = document.createElement("td");
-            idTd.append(item.id);
-            tr.append(idTd);
+            //const idTd = document.createElement("td");
+            //idTd.append(item.id);
+            //tr.append(idTd);
 
             const titleTd = document.createElement("td");
             titleTd.append(item.title);
@@ -161,6 +161,10 @@
             const statusTd = document.createElement("td");
             statusTd.append(item.status.title);
             tr.append(statusTd);
+
+            const mechanicTd = document.createElement("td");
+            mechanicTd.append(item.mechanic.name);
+            tr.append(mechanicTd);
 
             //const linksTd = document.createElement("td");
 
@@ -209,9 +213,11 @@
         //        EditItem(id, title);
         //});
 
-        GetItems();
-        GetOrderInfo();
-
+        
+        window.onload = function () {
+            GetItems();
+            GetOrderInfo();
+        };
     </script>
 </body>
 </html>
