@@ -15,6 +15,7 @@ namespace Business.Services
     public class MechanicService : DefaultService<MechanicDto,Mechanic,MechanicService>, IMechanicService
     {
         private IRepository<Service> serviceRepository;
+        private IRepository<Core.Entities.OrderService> orderServiceRepository;
         private IOrderService orderService;
         public MechanicService(ILogger<MechanicService> logger, UnitOfWork repos, IOrderService os) 
             : base(repos.Mechanics,logger,
@@ -118,6 +119,7 @@ namespace Business.Services
         {
             serviceRepository = repos.Services;
             this.orderService = os;
+            this.orderServiceRepository = repos.OrderServices;
         }
 
         public new MechanicDto editItemReturning(MechanicDto itemDto)
@@ -202,7 +204,8 @@ namespace Business.Services
                     {
                         os.MechanicId = mechanicId;
                         os.OrderServiceStatusId = 2;
-                        serviceRepository.Update(s);
+                        //serviceRepository.Update(s);
+                        orderServiceRepository.Update(os);
                         return new FullServiceDto
                         {
                             ServiceId = s.Id,
@@ -215,7 +218,7 @@ namespace Business.Services
                             Price = os.Price,
                             Status = new FullServiceStatusDto
                             {
-                                Id = os.OrderServiceStatusId,
+                                Id = os.OrderServiceStatus.Id,
                                 Title = os.OrderServiceStatus.Title
                             },
                             Title = s.Title,
@@ -261,7 +264,8 @@ namespace Business.Services
                         os.MechanicId == mechanicId )
                     {
                         os.OrderServiceStatusId = 3;
-                        serviceRepository.Update(s);
+                        //serviceRepository.Update(s);
+                        orderServiceRepository.Update(os);
                         orderService.TryCloseOrder(orderId);
                         return new FullServiceDto
                         {

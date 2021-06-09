@@ -22,6 +22,7 @@ namespace Core
         private IRepository<Mechanic> _mechanicRepository;
         private IRepository<Service> _serviceRepository;
         private IRepository<Order> _orderRepository;
+        private IRepository<OrderService> _orderServiceRepository;
         private IRepository<OrderServiceStatus> _statusRepository;
 
         
@@ -110,7 +111,7 @@ namespace Core
             get
             {
                 if (_orderRepository == null)
-                    _orderRepository = new Repository<Order>(_context,
+                    _orderRepository = new OrderRepository(_context,
                         loggerFactory.CreateLogger("Repository<Order>"),
                         ds =>
                         {
@@ -182,6 +183,23 @@ namespace Core
                             .Include(s => s.OrderServices).AsNoTracking();
                         });
                 return _serviceRepository;
+            }
+        }
+
+        public IRepository<OrderService> OrderServices
+        {
+            get
+            {
+                if (_orderServiceRepository == null)
+                    _orderServiceRepository = new Repository<OrderService>(_context,
+                        loggerFactory.CreateLogger("Repository<Service>"),
+                        os =>
+                        {
+                            return os.Include(os => os.Mechanic).AsNoTracking()
+                            .Include(os => os.Order).AsNoTracking()
+                            .Include(os=>os.OrderServiceStatus).AsNoTracking();
+                        });
+                return _orderServiceRepository;
             }
         }
 

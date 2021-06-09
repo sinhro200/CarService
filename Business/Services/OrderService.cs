@@ -1,10 +1,13 @@
 ﻿using Business.DTO;
 using Business.Interfaces;
+using ClosedXML.Excel;
 using Core;
 using Core.Entities;
 using Core.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
 
 namespace Business.Services
 {
@@ -218,30 +221,116 @@ namespace Business.Services
             repository.Update(order);
         }
 
+
+        private System.Func<Order, bool> IsOrderOkPredicate( OrderFilterDto orderFilterDto)
+        {
+            return (Order ord) =>
+            {
+                bool isOk = true;
+
+                if (isOk && orderFilterDto.FinishedStatus != null)
+                    isOk = orderFilterDto.FinishedStatus == 1 ||
+                           (orderFilterDto.FinishedStatus == 2 && ord.IsClosed) ||
+                           (orderFilterDto.FinishedStatus == 3 && !ord.IsClosed);
+
+                if (isOk && orderFilterDto.CarModelIds != null && orderFilterDto.CarModelIds.Count > 0)
+                    isOk = orderFilterDto.CarModelIds.Contains(ord.Car.ModelId);
+                if (isOk && orderFilterDto.OwnerIds != null && orderFilterDto.OwnerIds.Count > 0)
+                    isOk = orderFilterDto.OwnerIds.Contains(ord.Car.OwnerId);
+
+                if (isOk && orderFilterDto.CreationDateTimeMax != null)
+                    isOk = ord.OpenDateTime.CompareTo(orderFilterDto.CreationDateTimeMax) < 0;
+                if (isOk && orderFilterDto.CreationDateTimeMin != null)
+                    isOk = ord.OpenDateTime.CompareTo(orderFilterDto.CreationDateTimeMin) > 0;
+
+                if (isOk && orderFilterDto.ClosedDateTimeMax != null)
+                    isOk = ord.OpenDateTime.CompareTo(orderFilterDto.ClosedDateTimeMax) < 0;
+                if (isOk && orderFilterDto.ClosedDateTimeMin != null)
+                    isOk = ord.OpenDateTime.CompareTo(orderFilterDto.ClosedDateTimeMin) > 0;
+
+
+                return isOk;
+            };   
+        }
+
         public List<OrderDto> OrdersWithFilter(OrderFilterDto orderFilterDto)
         {
             List<OrderDto> result = new List<OrderDto>();
-            List<Order> foundUsingFilters = repository.FindBy(ord => {
-                bool k = true;
-                if (orderFilterDto.CarModelIds != null)
-                    k = orderFilterDto.CarModelIds.Contains(ord.Car.ModelId);
-                if(orderFilterDto.OwnerIds != null)
-                    k = orderFilterDto.OwnerIds.Contains(ord.Car.OwnerId);
-
-                if (orderFilterDto.CreationDateTimeMax != null)
-                    k = ord.OpenDateTime.CompareTo(orderFilterDto.CreationDateTimeMax) < 0;
-                if (orderFilterDto.CreationDateTimeMin != null)
-                    k = ord.OpenDateTime.CompareTo(orderFilterDto.CreationDateTimeMin) > 0;
-
-                if (orderFilterDto.ClosedDateTimeMax != null)
-                    k = ord.OpenDateTime.CompareTo(orderFilterDto.ClosedDateTimeMax) < 0;
-                if (orderFilterDto.ClosedDateTimeMin != null)
-                    k = ord.OpenDateTime.CompareTo(orderFilterDto.ClosedDateTimeMin) > 0;
-
-                return k;
-            });
-
+            List<Order> foundUsingFilters = repository.FindBy(IsOrderOkPredicate(orderFilterDto));
             return foundUsingFilters.ConvertAll(modelToDtoConverter.Invoke);
+        }
+
+        /**
+         * orderCode:
+         * 1 - order by name
+         * 2 - order by price
+         * 3 - order by creationDate
+         * 4 - order by closingDate
+         * another - default
+         */
+        public List<OrderDto> OrdersWithFilterOrdeing(OrderFilterDto orderFilterDto, int orderCode, bool isAsc)
+        {
+            List<OrderDto> result = new List<OrderDto>();
+            OrderRepository ordRep = repository as OrderRepository;
+            List<Order> foundUsingFilters;
+            switch (orderCode)
+            {
+                case 1:
+                    foundUsingFilters = ordRep.FindByWithOrderingOwner(
+                        IsOrderOkPredicate(orderFilterDto), isAsc);
+                    break;
+                case 2:
+                    foundUsingFilters = ordRep.FindByWithOrderingSumPrice(
+                        IsOrderOkPredicate(orderFilterDto), isAsc);
+                    break;
+                case 3:
+                    foundUsingFilters = ordRep.FindByWithOrderingCreationDate(
+                        IsOrderOkPredicate(orderFilterDto), isAsc);
+                    break;
+                case 4:
+                    foundUsingFilters = ordRep.FindByWithOrderingClosingDate(
+                        IsOrderOkPredicate(orderFilterDto), isAsc);
+                    break;
+                    break;
+                default:
+                    foundUsingFilters = ordRep.FindBy(IsOrderOkPredicate(orderFilterDto));
+                    break;
+            };
+            return foundUsingFilters.ConvertAll(modelToDtoConverter.Invoke);
+        }
+
+        public MemoryStream ToXml(List<OrderDto> orders)
+        {
+            var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Лист1");
+
+            //создадим заголовки у столбцов
+            worksheet.Cell("A" + 1).Value = "Имя";
+            worksheet.Cell("B" + 1).Value = "Фамиля";
+            worksheet.Cell("C" + 1).Value = "Возраст";
+
+            // 
+
+            worksheet.Cell("A" + 2).Value = "Иван";
+            worksheet.Cell("B" + 2).Value = "Иванов";
+            worksheet.Cell("C" + 2).Value = 18;
+            //пример изменения стиля ячейки
+            worksheet.Cell("B" + 2).Style.Fill.BackgroundColor = XLColor.Red;
+
+            // пример создания сетки в диапазоне
+            var rngTable = worksheet.Range("A1:G" + 10);
+            rngTable.Style.Border.RightBorder = XLBorderStyleValues.Thin;
+            rngTable.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+
+            worksheet.Columns().AdjustToContents(); //ширина столбца по содержимому
+
+            // вернем пользователю файл без сохранения его на сервере
+            System.IO.MemoryStream stream = new System.IO.MemoryStream();
+            workbook.SaveAs(stream);
+
+            return stream;
+                //return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Base.xlsx");
+            
         }
     }
 }

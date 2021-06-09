@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 using Business;
 using Business.Interfaces;
 using Business.DTO;
+using System.Net.Http;
+using System.Net;
+using System.Net.Http.Headers;
+using System.IO;
 
 namespace Web.Controllers
 {
@@ -94,6 +98,23 @@ namespace Web.Controllers
             return Ok(orders);
         }
 
+        [HttpPost]
+        [Route("withFiltersOrdering/{orderCode}/{isAsc}")]
+        public IActionResult GetWithFiltersOrdering(int orderCode,bool isAsc, OrderFilterDto orderFilterDto)
+        {
+            _logger.LogInformation($"Got req to get orders with filter with ordering:{orderFilterDto}");
+            List<OrderDto> orders = orderService.OrdersWithFilterOrdeing(orderFilterDto, orderCode, isAsc);
+            return Ok(orders);
+        }
 
+        [HttpPost]
+        [Route("withFiltersOrderingAsXml/{orderCode}/{isAsc}")]
+        public FileResult GetWithFiltersOrderingXml(int orderCode, bool isAsc, OrderFilterDto orderFilterDto)
+        {
+            _logger.LogInformation($"Got req to get orders with filter with ordering:{orderFilterDto}");
+            List<OrderDto> orders = orderService.OrdersWithFilterOrdeing(orderFilterDto, orderCode, isAsc);
+            MemoryStream memoryStream = orderService.ToXml(orders);
+            return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Grid.xlsx");
+        }
     }
 }

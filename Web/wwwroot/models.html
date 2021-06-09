@@ -230,10 +230,14 @@
             const id = form.elements["id"].value;
             const title = form.elements["title"].value;
             const brandId = form.elements["brandSelect"].value;
-            if (id == 0)
-                CreateItem(title, brandId);
-            else
-                EditItem(id, title, brandId);
+            if (!title || !brandId)
+                alert("Не все поля заполнены")
+            else {
+                if (id == 0)
+                    CreateItem(title, brandId);
+                else
+                    EditItem(id, title, brandId);
+            }
         });
 
 

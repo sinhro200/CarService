@@ -4,3 +4,15 @@
 .btn a {
     color: white;
 }
+
+h2{
+    margin-left:30px;
+}
+
+.panel-body {
+    margin: 20px;
+}
+
+form{
+    padding-left:20px;
+}

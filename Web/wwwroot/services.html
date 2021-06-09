@@ -190,10 +190,15 @@
             const id = form.elements["id"].value;
             const title = form.elements["title"].value;
             const price = form.elements["price"].value;
-            if (id == 0)
-                CreateItem(title, price);
-            else
-                EditItem(id, title, price);
+            if (!title || !price || price < 0) {
+                alert("Не все поля корректно заполнены");
+            }
+            else {
+                if (id == 0)
+                    CreateItem(title, price);
+                else
+                    EditItem(id, title, price);
+            }
         });
 
         GetItems();

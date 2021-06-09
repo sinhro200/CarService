@@ -163,7 +163,8 @@
             tr.append(statusTd);
 
             const mechanicTd = document.createElement("td");
-            mechanicTd.append(item.mechanic.name);
+            if (item.mechanic)
+                mechanicTd.append(item.mechanic.name);
             tr.append(mechanicTd);
 
             //const linksTd = document.createElement("td");

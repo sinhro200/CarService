@@ -15,7 +15,7 @@
 
     <script src="https://momentjs.com/downloads/moment.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <!--<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>-->
     <script src="https://unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
     <link href="https://unpkg.com/gijgo@1.9.13/css/gijgo.min.css" rel="stylesheet" type="text/css" />
 
@@ -34,24 +34,24 @@
         //});
     </script>
 
-    <link rel="stylesheet" type="text/css" href="/jquery.datetimepicker.css" />
-    <script src="/jquery.js"></script>
-    <script src="/build/jquery.datetimepicker.full.min.js"></script>
+    <!--<link rel="stylesheet" type="text/css" href="/jquery.datetimepicker.css" />-->
+    <!--<script src="/jquery.js"></script>-->
+    <!--<script src="/build/jquery.datetimepicker.full.min.js"></script>-->
 </head>
 <body>
 
     <div id="headerContent" class="container panel-body"></div>
 
-    <h2>Заказы</h2>
+    <h2 >Заказы</h2>
     <form name="itemForm">
         <div class="form-group col-md-5">
             <label for="userSelect"><h5>Выбор владельца</h5></label>
-            <select class="form-control" id="userSelect">
+            <select class="form-control" id="userSelect" multiple="multiple">
             </select>
         </div>
         <div class="form-group col-md-5">
             <label for="modelSelect"><h5>Выбор машины</h5></label>
-            <select class="form-control" id="modelSelect">
+            <select class="form-control" id="modelSelect" multiple="multiple">
             </select>
         </div>
         <div class="form-group col-md-5">
@@ -64,19 +64,41 @@
             От <input class="list-inline-item" id="closeDatetimepickerMin" type="text" /><br />
             До <input class="list-inline-item" id="closeDatetimepickerMax" type="text" />
         </div>
-        <div class="panel-body">
+        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-secondary active">
+                <input type="radio" name="options" id="1" checked> Все заказы
+            </label>
+            <label class="btn btn-secondary">
+                <input type="radio" name="options" id="2"> Только завершённые
+            </label>
+            <label class="btn btn-secondary">
+                <input type="radio" name="options" id="3"> Только незавершённые
+            </label>
+        </div>
+        <div class="panel-body" style="margin-left:20px">
             <button type="submit" id="submit" class="btn btn-primary">Отфильтровать</button>
             <!--<a id="reset" class="btn btn-primary">Сбросить</a>-->
         </div>
+        <div class="panel-body" style="margin-left:20px">
+            <button type="button" id="asXmlBtn" class="btn btn-primary">Загрузить</button>
+            <!--<a id="reset" class="btn btn-primary">Сбросить</a>-->
+        </div>
     </form>
-    <table class="table table-condensed table-striped">
+    <table id="dataTable" class="table table-condensed table-striped">
         <!--class="col-md-6"-->
-        <thead><tr><th>Владелец</th><th>Машина</th><th>Создание</th><th>Завершение</th><th>Сумма</th><th></th></tr></thead>
+        <thead><tr>
+            <th  ><div id="ownerBtn" class="btn btn-light">Владелец</div></th>
+            <th >Машина</th>
+            <th ><div id="creationOrderBtn" class="btn btn-light">Создание</div></th>
+            <th ><div id="closedOrderBtn" class="btn btn-light">Завершение</div></th>
+            <th ><div id="priceBtn" class="btn btn-light">Сумма</div></th>
+            <th></th>
+            </tr></thead>
         <tbody>
         </tbody>
     </table>
     <script>
-
+        
         $('#creationDatetimepickerMin').datetimepicker({ footer: true, modal: true });
         $('#creationDatetimepickerMax').datetimepicker({ footer: true, modal: true });
 
@@ -120,21 +142,93 @@
         const carId = urlParams.get('carId')
         const userId = urlParams.get('userId')
 
-        async function GetItems() {
-            const response = await fetch("/Order/byCar?carId=" + carId, {
-                method: "GET",
-                headers: { "Accept": "application/json" }
+        var lastSendData = null;
+        async function GetData(userIds = null, modelIds = null, finishingOrderStatus = 1) {
+            let bodyData = JSON.stringify({
+                OwnerIds: userIds,
+                CarModelIds: modelIds,
+                CreationDateTimeMin: getCreationDateTimeMin(),
+                CreationDateTimeMax: getCreationDateTimeMax(),
+                ClosedDateTimeMin: getClosedDateTimeMin(),
+                ClosedDateTimeMax: getClosedDateTimeMax(),
+                FinishedStatus: finishingOrderStatus
+            });
+            lastSendData = bodyData;
+            console.log("sending req to get orders with filters :" + bodyData)
+            const response = await fetch("/Order/withFilters", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: bodyData
             });
             if (response.ok === true) {
                 const orders = await response.json();
-                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by carid " + carId);
+                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by filter");
                 let rows = document.querySelector("tbody");
+
+                clearTable();
                 orders.forEach(item => {
                     rows.append(row(item));
                 });
-
+            } else {
+                alert("err");
             }
         }
+
+        async function GetLastDataOrdering(orderCode, isAsc) {
+            console.log("sending req to get orders with filters :" + lastSendData + ". Ordering params :" + orderCode + " " + isAsc);
+            const response = await fetch("/Order/withFiltersOrdering/" + orderCode+"/"+isAsc, {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: lastSendData
+            });
+            if (response.ok === true) {
+                const orders = await response.json();
+                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by filter");
+                let rows = document.querySelector("tbody");
+                clearTable();
+                orders.forEach(item => {
+                    rows.append(row(item));
+                });
+            }
+        }
+
+        var lastIsAsc = true;
+        var isNameAsc = true;
+        var isPriceAsc = true;
+        var isCreationAsc = true;
+        var isCloseAsc = true;
+        var lastClickOrderingCode = 0;
+        $("#ownerBtn").click(function () {
+            if (lastClickOrderingCode == 1)
+                isNameAsc = !isNameAsc;
+            lastClickOrderingCode = 1;
+            lastIsAsc = isNameAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isNameAsc);
+        });
+
+        $("#priceBtn").click(function () {
+            if (lastClickOrderingCode == 2)
+                isPriceAsc = !isPriceAsc;
+            lastClickOrderingCode = 2;
+            lastIsAsc = isPriceAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isPriceAsc);
+        });
+          
+        $("#creationOrderBtn").click(function () {
+            if (lastClickOrderingCode == 3)
+                isCreationAsc = !isCreationAsc;
+            lastClickOrderingCode = 3;
+            lastIsAsc = isCreationAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isCreationAsc);
+        });
+
+        $("#closedOrderBtn").click(function () {
+            if (lastClickOrderingCode == 4)
+                isCloseAsc = !isCloseAsc;
+            lastClickOrderingCode = 4;
+            lastIsAsc = isCloseAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isCloseAsc);
+        });
         //async function GetItem(id) {
         //    const response = await fetch("/brand/get/" + id, {
         //        method: "GET",
@@ -148,30 +242,30 @@
         //        form.elements["title"].value = item.title;
         //    }
         //}
-        async function CreateItem(carId, servicesIds) {
-            var servicesData = [];
-            for (let serId of servicesIds) {
-                servicesData.push(
-                    {
-                        ServiceId: serId
-                    }
-                )
-            }
-            const response = await fetch("/Order/add", {
-                method: "POST",
-                headers: { "Accept": "application/json", "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    Car: { Id: carId },
-                    Services: servicesData
-                })
-            });
-            if (response.ok === true) {
-                const order = await response.json();
-                reset();
-                console.log("Got order from server " + JSON.stringify(order) + " as response on create {carid:" + carId + ", servicesIds:" + servicesIds + "}");
-                document.querySelector("tbody").append(row(order));
-            }
-        }
+        //async function CreateItem(carId, servicesIds) {
+        //    var servicesData = [];
+        //    for (let serId of servicesIds) {
+        //        servicesData.push(
+        //            {
+        //                ServiceId: serId
+        //            }
+        //        )
+        //    }
+        //    const response = await fetch("/Order/add", {
+        //        method: "POST",
+        //        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        //        body: JSON.stringify({
+        //            Car: { Id: carId },
+        //            Services: servicesData
+        //        })
+        //    });
+        //    if (response.ok === true) {
+        //        const order = await response.json();
+        //        reset();
+        //        console.log("Got order from server " + JSON.stringify(order) + " as response on create {carid:" + carId + ", servicesIds:" + servicesIds + "}");
+        //        document.querySelector("tbody").append(row(order));
+        //    }
+        //}
 
         //async function EditItem(itemId, brandTitle) {
         //    const response = await fetch("brand/edit", {
@@ -190,23 +284,23 @@
         //    }
         //}
 
-        async function DeleteItem(orderid) {
-            const response = await fetch("/Order/delete/" + orderid, {
-                method: "DELETE",
-                headers: { "Accept": "application/json" }
-            });
-            if (response.ok === true) {
-                console.log("Got OK from server as response on delete order with id " + orderid);
-                document.querySelector("tr[data-rowid='" + orderid + "']").remove();
-            }
-        }
+        //async function DeleteItem(orderid) {
+        //    const response = await fetch("/Order/delete/" + orderid, {
+        //        method: "DELETE",
+        //        headers: { "Accept": "application/json" }
+        //    });
+        //    if (response.ok === true) {
+        //        console.log("Got OK from server as response on delete order with id " + orderid);
+        //        document.querySelector("tr[data-rowid='" + orderid + "']").remove();
+        //    }
+        //}
 
         // сброс формы
         function reset() {
             const form = document.forms["itemForm"];
             form.reset();
-            $("#serviceSelect").val(null).trigger('change');
-            $("#carSelect").val(null).trigger('change');
+            $("#userSelect").val(null).trigger('change');
+            $("#modelSelect").val(null).trigger('change');
         }
         // создание строки для таблицы
         function row(item) {
@@ -214,10 +308,16 @@
             const tr = document.createElement("tr");
             tr.setAttribute("data-rowid", item.id);
 
-            //order id
-            const idTd = document.createElement("td");
-            idTd.append(item.id);
-            tr.append(idTd);
+            ////order id
+            //const idTd = document.createElement("td");
+            //idTd.append(item.id);
+            //tr.append(idTd);
+
+            //order car owner
+            const ownerTd = document.createElement("td");
+            const ownerStr = item.car.owner.name;
+            ownerTd.append(ownerStr);
+            tr.append(ownerTd);
 
             //order car
             const carTd = document.createElement("td");
@@ -225,14 +325,30 @@
             carTd.append(carStr);
             tr.append(carTd);
 
-            //order services
-            const servicesTd = document.createElement("td");
-            var servStr = "";
+            //order create date time
+            const createDateTimeTd = document.createElement("td");
+            let createMoment = moment(item.createDateTime);
+            const createDateTimeStr = createMoment.format("DD.MM.YYYY, HH:mm:ss");
+            createDateTimeTd.append(createDateTimeStr);
+            tr.append(createDateTimeTd);
+
+            //order close date time
+            const closeDateTimeTd = document.createElement("td");
+            if (item.closedDateTime) {
+                let closeMoment = moment(item.closedDateTime);
+                const closeDateTimeStr = closeMoment.format("DD.MM.YYYY, HH:mm:ss");
+                closeDateTimeTd.append(closeDateTimeStr)
+            } 
+            tr.append(closeDateTimeTd);
+
+            //order sum price
+            const priceTd = document.createElement("td");
+            var sumPrice = 0;
             for (let s of item.services) {
-                servStr += s.title + ", ";
+                sumPrice += s.price;
             }
-            servicesTd.append(servStr);
-            tr.append(servicesTd);
+            priceTd.append(sumPrice);
+            tr.append(priceTd);
 
             //create order datetime
             //const createDatetimeTd = document.createElement("td");
@@ -244,22 +360,19 @@
             //status with close order datetime?
             const statusTd = document.createElement("td");
             if (item.isClosed) {
-                let closeMoment = moment(item.closeDateTime);
-                let closeDateTime = closeMoment.format("DD.MM.YYYY, HH:mm:ss");
-                statusTd.append("Завершён " + closeDateTime);
+                statusTd.append("Завершён");
             } else {
                 statusTd.append("В процессе");
             }
             tr.append(statusTd);
 
-            const sumPriceTd = document.createElement("td");
-            var sumPrice = 0;
-            for (let serv of item.services) {
-                sumPrice += serv.price;
-            }
-            sumPriceTd.append(sumPrice);
-
-            tr.append(sumPriceTd);
+            //const sumPriceTd = document.createElement("td");
+            //var sumPrice = 0;
+            //for (let serv of item.services) {
+            //    sumPrice += serv.price;
+            //}
+            //sumPriceTd.append(sumPrice);
+            //tr.append(sumPriceTd);
 
 
             const linksTd = document.createElement("td");
@@ -270,20 +383,6 @@
             editLink.setAttribute("style", "cursor:pointer;padding:15px;");
             editLink.append("Подробнее");
             linksTd.append(editLink);
-
-            if (!item.isClosed) {
-                const removeLink = document.createElement("a");
-                removeLink.setAttribute("data-id", item.id);
-                removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
-                removeLink.append("Удалить");
-                removeLink.addEventListener("click", e => {
-
-                    e.preventDefault();
-                    //order id
-                    DeleteItem(item.id);
-                });
-                linksTd.append(removeLink);
-            }
 
             tr.appendChild(linksTd);
 
@@ -296,94 +395,110 @@
         //    reset();
         //})
 
-        function clearCarSelect() {
+        function clearModelSelect() {
             //$("#carSelect").html('').select2({ data: [{ id: '', text: '' }] });
-            $("#carSelect").html('').select2({ data: null });
+            $("#modelSelect").html('').select2({ data: null });
         }
 
-        async function loadCarSelect() {
-            const response = await fetch("car/byUser?userId=" + userId, {
+        async function loadModelSelect() {
+            const response = await fetch("model/all", {
                 method: "GET",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" }
             });
             if (response.ok === true) {
-                const cars = await response.json();
-                console.log("Got cars from server " + JSON.stringify(cars) + " as response on get by user id " + userId);
-                var carSelectDatas = [];
-                for (let car of cars) {
-                    let model = car.model.title;
-                    let brand = car.model.brandDto.title;
-                    carSelectDatas.push(
+                const models = await response.json();
+                clearModelSelect();
+                console.log("Got models from server " + JSON.stringify(models) + " as response on get all");
+                var autoSelectDatas = [];
+                for (let m of models) {
+                    const title = m.title;
+                    const brandTitle = m.brandDto.title;
+                    autoSelectDatas.push(
                         {
-                            id: car.id,
-                            text: brand + " " + model
+                            id: m.id,
+                            text: brandTitle + " " + title
                         }
                     )
                 }
-                clearCarSelect();
-                $("#carSelect").select2({
-                    data: carSelectDatas
+                $("#modelSelect").select2({
+                    data: autoSelectDatas
                 })
             }
         }
 
-        function clearServiceSelect() {
+        function clearUserSelect() {
             //$("#serviceSelect").html('').select2({ data: [{ id: '', text: '' }] });
-            $("#serviceSelect").html('').select2({ data: null });
+            $("#userSelect").html('').select2({ data: null });
         }
 
-        async function loadServiceSelect() {
-            const select = $("#serviceSelect");
-            const response = await fetch("service/byCar?carId=" + carId, {
+        async function loadUserSelect() {
+            const response = await fetch("user/all", {
                 method: "GET",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" }
             });
             if (response.ok === true) {
-                const services = await response.json();
-                clearServiceSelect();
-                console.log("Got services from server " + JSON.stringify(services) + " as response on get by car id " + carId);
+                const users = await response.json();
+                clearUserSelect();
+                console.log("Got users from server " + JSON.stringify(users) + " as response on get all");
                 //var servicesSelectDatas = [];
-                for (let serv of services) {
-                    let title = serv.title;
-                    let price = serv.price;
-                    select.append(new Option(title + " " + price, serv.serviceId, false, false))
-                    //servicesSelectDatas.push(
-                    //    {
-                    //        id: serv.id,
-                    //        text: title + " " + price
-                    //    }
-                    //)
+                var usersDatas = [];
+                for (let user of users) {
+                    let uId = user.id;
+                    let uName = user.name;
+                    usersDatas.push(
+                        {
+                            id: uId,
+                            text: uName
+                        }
+                    )
                 }
-
-                //$("#serviceSelect").select2({
-                //    data: servicesSelectDatas
-                //})
+                $("#userSelect").select2({
+                    data: usersDatas
+                })
             }
         }
 
+        function clearTable() {
+            $("#dataTable tbody tr").remove(); 
+        }
 
         document.forms["itemForm"].addEventListener("submit", e => {
             e.preventDefault();
-            //const form = document.forms["itemForm"];
-            const selectedCarsOptions = $("#carSelect").select2('data');
-            const carIds = selectedCarsOptions.map(el => el.id);
+            const selectedModelsOptions = $("#modelSelect").select2('data');
+            const modelIds = selectedModelsOptions.map(el => el.id);
 
-            const selectedServicesOptions = $("#serviceSelect").select2('data');
-            const servicesIds = selectedServicesOptions.map(el => el.id);
-            if (servicesIds.length == 0)
-                alert("Не выбрано ни одной услуги")
-            else
-                //if (id == 0)
-                CreateItem(carIds[0], servicesIds);
-            //else
-            //    EditItem(ownerId, modelIds);
+            const selectedUsersOptions = $("#userSelect").select2('data');
+            const usersIds = selectedUsersOptions.map(el => el.id);
+
+            const finishingOrderStatus = $('.btn.btn-secondary.active')[0].children[0].id;
+
+            GetData(usersIds, modelIds, finishingOrderStatus);
         });
+
+        async function downloadXml() {
+            console.log("sending req to get orders as xml with filters :" + lastSendData + ". Ordering params :" + lastClickOrderingCode + " " + lastIsAsc);
+            fetch("/Order/withFiltersOrderingAsXml/" + lastClickOrderingCode + "/" + lastIsAsc, {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: lastSendData
+            }).then(res => res.blob())
+                .then(blob => {
+                    var fileLink = window.URL.createObjectURL(blob);
+                    var link = document.createElement('a');
+                    link.href = fileLink;
+                    link.download = "statistic.xlsx";
+                    link.click();
+                });
+        }
+        $("#asXmlBtn").click(function () {
+            downloadXml();
+        })
 
 
         window.onload = function () {
-            loadCarSelect();
-            loadServiceSelect();
-            GetItems();
+            loadModelSelect();
+            loadUserSelect();
+            GetData();
         };
 
     </script>

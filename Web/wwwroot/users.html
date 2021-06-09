@@ -168,17 +168,26 @@
             editCarsLink.append("Машины");
             linksTd.append(editCarsLink);
 
-            const removeLink = document.createElement("a");
-            removeLink.setAttribute("data-id", user.id);
-            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
-            removeLink.append("Удалить");
-            removeLink.addEventListener("click", e => {
+            var canDelete = true;
+            for (let c of user.cars) {
+                if (c.orders != null && c.orders.length != 0) {
+                    canDelete = false;
+                    break;
+                }
+            }
+            if (canDelete) {
+                const removeLink = document.createElement("a");
+                removeLink.setAttribute("data-id", user.id);
+                removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+                removeLink.append("Удалить");
+                removeLink.addEventListener("click", e => {
 
-                e.preventDefault();
-                DeleteUser(user.id);
-            });
+                    e.preventDefault();
+                    DeleteUser(user.id);
+                });
+                linksTd.append(removeLink);
+            }
 
-            linksTd.append(removeLink);
             tr.appendChild(linksTd);
 
             return tr;
@@ -199,10 +208,14 @@
             const form = document.forms["userForm"];
             const id = form.elements["id"].value;
             const name = form.elements["name"].value;
-            if (id == 0)
-                CreateUser(name);
-            else
-                EditUser(id, name);
+            if (!name)
+                alert("Имя не заполнено")
+            else {
+                if (id == 0)
+                    CreateUser(name);
+                else
+                    EditUser(id, name);
+            }
         });
 
         // загрузка пользователей

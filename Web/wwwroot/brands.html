@@ -172,10 +172,15 @@
             const form = document.forms["itemForm"];
             const id = form.elements["id"].value;
             const title = form.elements["title"].value;
-            if (id == 0)
-                CreateItem(title);
-            else
-                EditItem(id, title);
+            if (!title) {
+                alert("Не все поля заполнены");
+            } else {
+
+                if (id == 0)
+                    CreateItem(title);
+                else
+                    EditItem(id, title);
+            }
         });
 
         GetItems();

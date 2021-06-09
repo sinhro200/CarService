@@ -20,9 +20,11 @@ namespace Business.DTO
 
         public DateTime? ClosedDateTimeMax { get; set; }
 
+        public int FinishedStatus { get; set; } = 1;
+
         public override string ToString()
         {
-            return $"{{{nameof(OwnerIds)}={OwnerIds}, {nameof(CarModelIds)}={CarModelIds}, {nameof(CreationDateTimeMin)}={CreationDateTimeMin.ToString()}, {nameof(CreationDateTimeMax)}={CreationDateTimeMax.ToString()}, {nameof(ClosedDateTimeMin)}={ClosedDateTimeMin.ToString()}, {nameof(ClosedDateTimeMax)}={ClosedDateTimeMax.ToString()}}}";
+            return $"{{{nameof(OwnerIds)}={OwnerIds}, {nameof(CarModelIds)}={CarModelIds}, {nameof(CreationDateTimeMin)}={CreationDateTimeMin.ToString()}, {nameof(CreationDateTimeMax)}={CreationDateTimeMax.ToString()}, {nameof(ClosedDateTimeMin)}={ClosedDateTimeMin.ToString()}, {nameof(ClosedDateTimeMax)}={ClosedDateTimeMax.ToString()}, {nameof(FinishedStatus)}={FinishedStatus.ToString()}}}";
         }
     }
 }
