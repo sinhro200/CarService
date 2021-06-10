@@ -113,7 +113,7 @@ namespace Web.Controllers
         {
             _logger.LogInformation($"Got req to get orders with filter with ordering:{orderFilterDto}");
             List<OrderDto> orders = orderService.OrdersWithFilterOrdeing(orderFilterDto, orderCode, isAsc);
-            MemoryStream memoryStream = orderService.ToXml(orders);
+            MemoryStream memoryStream = orderService.ToXml(orders,orderFilterDto);
             return File(memoryStream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Grid.xlsx");
         }
     }

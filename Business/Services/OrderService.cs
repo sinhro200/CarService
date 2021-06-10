@@ -18,6 +18,7 @@ namespace Business.Services
         private readonly IRepository<Car> carRepository;
         private readonly IRepository<Service> serviceRepository;
         private readonly IRepository<User> userRepository;
+        private readonly IRepository<Model> modelRepository;
 
         public OrderService(ILogger<OrderService> logger, UnitOfWork repos)
             : base(repos.Orders, logger,
@@ -105,6 +106,7 @@ namespace Business.Services
             this.carRepository = repos.Cars;
             this.serviceRepository = repos.Services;
             this.userRepository = repos.Users;
+            this.modelRepository = repos.Models;
         }
 
         public new OrderDto addItemReturning(OrderDto dto)
@@ -300,53 +302,200 @@ namespace Business.Services
             return foundUsingFilters.ConvertAll(modelToDtoConverter.Invoke);
         }
 
-        public MemoryStream ToXml(List<OrderDto> orders)
+        public MemoryStream ToXml(List<OrderDto> orders, OrderFilterDto orderFilters)
         {
+            List<User> filterUsers;
+            if (orderFilters.OwnerIds == null || orderFilters.OwnerIds.Count == 0)
+                filterUsers = null;
+            else
+                filterUsers= userRepository.FindBy(u => orderFilters.OwnerIds.Contains(u.Id));
+
+            List<Model> filterCars;
+            if (orderFilters.CarModelIds == null || orderFilters.CarModelIds.Count == 0)
+                filterCars = null;
+            else
+                filterCars = modelRepository.FindBy(m=>orderFilters.CarModelIds.Contains(m.Id));
+
+            DateTime? filterCreationDateTimeMin = orderFilters.CreationDateTimeMin;
+            DateTime? filterCreationDateTimeMax = orderFilters.CreationDateTimeMax;
+            DateTime? filterFinishedDateTimeMin = orderFilters.ClosedDateTimeMin;
+            DateTime? filterFinishedDateTimeMax = orderFilters.ClosedDateTimeMax;
+
+            String finishedStatus;
+            switch (orderFilters.FinishedStatus)
+            {
+                case 1:
+                    finishedStatus = "Все заказы";
+                    break;
+                case 2:
+                    finishedStatus = "Только закрытые";
+                    break;
+                case 3:
+                    finishedStatus = "Только открытые";
+                    break;
+                default:
+                    finishedStatus = "Любой";
+                    break;
+            }
+
             var workbook = new XLWorkbook();
-            var worksheet = workbook.Worksheets.Add("Статистика");
+            var worksheetMain = workbook.Worksheets.Add("Сводная статистика");
+            var worksheetDetailed = workbook.Worksheets.Add("Подробная статистика");
 
+            int row = 1;
+            int rowForDetailed = 3;
+
+            worksheetMain.Cell("D" + row).Value = "Заказы по критериям:";
+            row++;
+
+            //Дата создания
+            worksheetMain.Cell("A" + row).Value = "Дата создания:";
+            row++;
+            worksheetMain.Cell("C" + row).Value = "От :";
+            worksheetMain.Cell("D" + row).Value = 
+                filterCreationDateTimeMin.HasValue ? filterCreationDateTimeMin.Value : "";
+            row++;
+            worksheetMain.Cell("C" + row).Value = "По:";
+            worksheetMain.Cell("D" + row).Value =
+                filterCreationDateTimeMax.HasValue ? filterCreationDateTimeMax.Value : "";
+            row++;
+
+            //Дата закрытия
+            worksheetMain.Cell("A" + row).Value = "Дата закрытия:";
+            row++;
+            worksheetMain.Cell("C" + row).Value = "От :";
+            worksheetMain.Cell("D" + row).Value =
+                filterFinishedDateTimeMin.HasValue ? filterFinishedDateTimeMin.Value : "";
+            row++;
+            worksheetMain.Cell("C" + row).Value = "По:";
+            worksheetMain.Cell("D" + row).Value =
+                filterFinishedDateTimeMax.HasValue ? filterFinishedDateTimeMax.Value : "";
+            row++;
+
+            //Владельцы
+            worksheetMain.Cell("A" + row).Value = "Владельцы:";
+            row++;
+            if (filterUsers == null)
+            {
+                worksheetMain.Cell("C" + row).Value = "";
+            }
+            else
+            {
+                foreach (User user in filterUsers)
+                {
+                    worksheetMain.Cell("C" + row).Value = user.Name;
+                    row++;
+                }
+            }
+            row++;
+
+            //Машины
+            worksheetMain.Cell("A" + row).Value = "Машины:";
+            row++;
+            if (filterCars == null)
+            {
+                worksheetMain.Cell("C" + row).Value = "";
+            }
+            else
+            {
+                foreach(Model model in filterCars)
+                {
+                    worksheetMain.Cell("C" + row).Value = model.Brand.Title + " " + model.Title;
+                    row++;
+                }
+            }
+            row++;
+
+            //Условие завершения
+            worksheetMain.Cell("A" + row).Value = "Условие завершения:";
+            row++;
+            worksheetMain.Cell("C" + row).Value = finishedStatus;
+
+            row +=2;
             //создадим заголовки у столбцов
-            worksheet.Cell("A" + 1).Value = "Id";
-            worksheet.Cell("B" + 1).Value = "Заказчик";
-            worksheet.Cell("C" + 1).Value = "Машина";
-            worksheet.Cell("D" + 1).Value = "Дата создания заказа";
-            worksheet.Cell("E" + 1).Value = "Даза закрытия заказа";
-            worksheet.Cell("F" + 1).Value = "Сумма";
+            worksheetMain.Cell("A" + row).Value = "Id";
+            worksheetMain.Cell("B" + row).Value = "Заказчик";
+            worksheetMain.Cell("C" + row).Value = "Машина";
+            worksheetMain.Cell("D" + row).Value = "Дата создания заказа";
+            worksheetMain.Cell("E" + row).Value = "Даза закрытия заказа";
+            worksheetMain.Cell("F" + row).Value = "Сумма";
+            row++;
 
-            var rngTable = worksheet.Range("A2:F" + (orders.Count+1));
-            rngTable.Style.Border.RightBorder = XLBorderStyleValues.Thin;
-            rngTable.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+            var table = worksheetMain.Range("A"+row+":F" + (row+orders.Count));
+            table.Style.Border.RightBorder = XLBorderStyleValues.Thin;
+            table.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
 
-            int row = 2;
+            
             double globalSum = 0;
             foreach(OrderDto od in orders)
             {
 
-                worksheet.Cell("A" + row).Value = od.Id;
-                worksheet.Cell("B" + row).Value = od.Car.Owner.Name;
-                worksheet.Cell("C" + row).Value = od.Car.Model.BrandDto.Title + " " + od.Car.Model.Title;
-                worksheet.Cell("D" + row).Value = od.CreateDateTime.ToString("dd/MM/yyyy H:mm");
+                worksheetMain.Cell("A" + row).Value = od.Id;
+                worksheetMain.Cell("B" + row).Value = od.Car.Owner.Name;
+                worksheetMain.Cell("C" + row).Value = od.Car.Model.BrandDto.Title + " " + od.Car.Model.Title;
+                worksheetMain.Cell("D" + row).Value = od.CreateDateTime.ToString("dd/MM/yyyy H:mm");
                 DateTime? closeDT = od.ClosedDateTime;
                 
                 if (closeDT != null)
-                    worksheet.Cell("E" + row).Value = closeDT.Value.ToString("dd/MM/yyyy H:mm");
+                    worksheetMain.Cell("E" + row).Value = closeDT.Value.ToString("dd/MM/yyyy H:mm");
                 else
-                    worksheet.Cell("E" + row).Value = "";
-                
+                    worksheetMain.Cell("E" + row).Value = "";
+
+                //detailed region
+                worksheetDetailed.Cell("A" + rowForDetailed).Value = od.Id;
+                worksheetDetailed.Cell("B" + rowForDetailed).Value = od.Car.Owner.Name;
+                worksheetDetailed.Cell("C" + rowForDetailed).Value = od.Car.Model.BrandDto.Title + " " + od.Car.Model.Title;
+                worksheetDetailed.Cell("D" + rowForDetailed).Value = od.CreateDateTime.ToString("dd/MM/yyyy H:mm");
+                if (closeDT != null)
+                    worksheetDetailed.Cell("E" + rowForDetailed).Value = closeDT.Value.ToString("dd/MM/yyyy H:mm");
+                else
+                    worksheetDetailed.Cell("E" + rowForDetailed).Value = "";
+                //end detailed region
+
                 double sum = 0;
+                rowForDetailed++;
                 foreach (FullServiceDto s in od.Services)
+                {
                     sum += s.Price;
-                worksheet.Cell("F" + row).Value = sum;
+                    //worksheetDetailed.Cell("B" + rowForDetailed).Value = "Услуга";
+                    worksheetDetailed.Cell("C" + rowForDetailed).Value = s.Title;
+                    worksheetDetailed.Cell("D" + rowForDetailed).Value = s.Status.Title;
+                    worksheetDetailed.Cell("E" + rowForDetailed).Value = s.Mechanic == null ? "" : s.Mechanic.Name;
+                    worksheetDetailed.Cell("F" + rowForDetailed).Value = s.Price;
+                    rowForDetailed++;
+                }
+                worksheetMain.Cell("F" + row).Value = sum;
+
+                worksheetDetailed.Cell("E" + rowForDetailed).Value = "Сумма:";
+                worksheetDetailed.Cell("E" + rowForDetailed).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Right);
+                worksheetDetailed.Cell("E" + rowForDetailed).Style.Fill.BackgroundColor = XLColor.AppleGreen;
+                worksheetDetailed.Cell("F" + rowForDetailed).Value = sum;
+                worksheetDetailed.Cell("F" + rowForDetailed).Style.Fill.BackgroundColor = XLColor.AppleGreen;
+
                 globalSum += sum;
                 row++;
+                rowForDetailed+=2;
             }
-            worksheet.Cell("E" + row).Value = "Выручка:";
+            worksheetMain.Cell("E" + row).Value = "Выручка:";
+            worksheetMain.Cell("E" + row).Style.Fill.BackgroundColor = XLColor.Green;
             //worksheet.Cell("F" + row).Value = ;
-            worksheet.Cell("F" + row).FormulaA1 = $"=СУММ(F2:F{(row - 1)})";
+            //worksheetMain.Cell("F" + row).FormulaA1 = $"=СУММ(F2:F{(row - 1)})";
+            worksheetMain.Cell("F" + row).Value = globalSum;
+            worksheetMain.Cell("F" + row).Style.Fill.BackgroundColor = XLColor.Green;
 
-            worksheet.Column("C").Width = 14;
-            worksheet.Column("D").Width = 20;
-            worksheet.Column("E").Width = 20;
+            worksheetDetailed.Cell("E" + rowForDetailed).Style.Fill.BackgroundColor = XLColor.Green;
+            worksheetDetailed.Cell("E" + rowForDetailed).Value = "Выручка:";
+            worksheetDetailed.Cell("F" + rowForDetailed).Style.Fill.BackgroundColor = XLColor.Green;
+            worksheetDetailed.Cell("F" + rowForDetailed).Value = globalSum;
+            
+
+            worksheetMain.Column("C").Width = 14;
+            worksheetMain.Column("D").Width = 20;
+            worksheetMain.Column("E").Width = 20;
+
+            worksheetDetailed.Column("C").Width = 14;
+            worksheetDetailed.Column("D").Width = 20;
+            worksheetDetailed.Column("E").Width = 20;
             //пример изменения стиля ячейки
             //worksheet.Cell("B" + 2).Style.Fill.BackgroundColor = XLColor.Red;
 

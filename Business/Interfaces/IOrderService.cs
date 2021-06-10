@@ -16,7 +16,7 @@ namespace Business.Interfaces
         List<OrderDto> OrdersWithFilter(OrderFilterDto orderFilterDto);
         List<OrderDto> OrdersWithFilterOrdeing(OrderFilterDto orderFilterDto, int orderCode, bool isAsc);
         List<FullServiceDto> ServicesForOrder(int orderId);
-        MemoryStream ToXml(List<OrderDto> orders);
+        MemoryStream ToXml(List<OrderDto> orders, OrderFilterDto orderFilter);
         void TryCloseOrder(int orderId);
     }
 }
