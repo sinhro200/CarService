@@ -119,7 +119,7 @@
         function getCreationDateTimeMax() {
             let pickerValue = $('#creationDatetimepickerMax')[0].value;
             if (pickerValue)
-                return serverStringFromPickerString();
+                return serverStringFromPickerString(pickerValue);
             return null;
         }
 

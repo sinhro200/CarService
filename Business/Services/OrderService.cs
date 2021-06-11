@@ -345,7 +345,9 @@ namespace Business.Services
             int row = 1;
             int rowForDetailed = 3;
 
-            worksheetMain.Cell("D" + row).Value = "Заказы по критериям:";
+            worksheetMain.Cell("D" + row).Value = "Применённые фильтры:";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.DarkGray;
+            worksheetMain.Cell("D" + row).Style.Font.FontColor = XLColor.White;
             row++;
 
             //Дата создания
@@ -353,11 +355,13 @@ namespace Business.Services
             row++;
             worksheetMain.Cell("C" + row).Value = "От :";
             worksheetMain.Cell("D" + row).Value = 
-                filterCreationDateTimeMin.HasValue ? filterCreationDateTimeMin.Value : "";
+                filterCreationDateTimeMin.HasValue ? filterCreationDateTimeMin.Value : "Любая";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
             row++;
             worksheetMain.Cell("C" + row).Value = "По:";
             worksheetMain.Cell("D" + row).Value =
-                filterCreationDateTimeMax.HasValue ? filterCreationDateTimeMax.Value : "";
+                filterCreationDateTimeMax.HasValue ? filterCreationDateTimeMax.Value : "Любая";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
             row++;
 
             //Дата закрытия
@@ -365,11 +369,13 @@ namespace Business.Services
             row++;
             worksheetMain.Cell("C" + row).Value = "От :";
             worksheetMain.Cell("D" + row).Value =
-                filterFinishedDateTimeMin.HasValue ? filterFinishedDateTimeMin.Value : "";
+                filterFinishedDateTimeMin.HasValue ? filterFinishedDateTimeMin.Value : "Любая";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
             row++;
             worksheetMain.Cell("C" + row).Value = "По:";
             worksheetMain.Cell("D" + row).Value =
-                filterFinishedDateTimeMax.HasValue ? filterFinishedDateTimeMax.Value : "";
+                filterFinishedDateTimeMax.HasValue ? filterFinishedDateTimeMax.Value : "Любая";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
             row++;
 
             //Владельцы
@@ -377,13 +383,15 @@ namespace Business.Services
             row++;
             if (filterUsers == null)
             {
-                worksheetMain.Cell("C" + row).Value = "";
+                worksheetMain.Cell("C" + row).Value = "Все";
+                worksheetMain.Cell("C" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
             }
             else
             {
                 foreach (User user in filterUsers)
                 {
                     worksheetMain.Cell("C" + row).Value = user.Name;
+                    worksheetMain.Cell("C" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
                     row++;
                 }
             }
@@ -394,7 +402,8 @@ namespace Business.Services
             row++;
             if (filterCars == null)
             {
-                worksheetMain.Cell("C" + row).Value = "";
+                worksheetMain.Cell("C" + row).Value = "Любые";
+                worksheetMain.Cell("C" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
             }
             else
             {
@@ -410,22 +419,54 @@ namespace Business.Services
             worksheetMain.Cell("A" + row).Value = "Условие завершения:";
             row++;
             worksheetMain.Cell("C" + row).Value = finishedStatus;
+            worksheetMain.Cell("C" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
+
+            var filtersUnderline = worksheetMain.Range("A"+row+":F"+row);
+            filtersUnderline.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
 
             row +=2;
+
+            worksheetMain.Cell("D" + row).Value = "Всего заказов после фильтрации:";
+            row++;
+            worksheetMain.Cell("D" + row).Value = orders.Count;
+            worksheetMain.Cell("D" + row).Style.Font.Bold = true;
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.LightGreen;
+            row++;
+
+            worksheetMain.Cell("D" + row).Value = "Выручка:";
+            row++;
+            IXLCell profitCell = worksheetMain.Cell("D" + row);
+            profitCell.Style.Font.Bold = true;
+            profitCell.Style.Fill.BackgroundColor = XLColor.LightGreen;
+
+            var profitAndCountUnderline = worksheetMain.Range("A" + row + ":F" + row);
+            profitAndCountUnderline.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+
+            row +=2;
+            worksheetMain.Cell("D" + row).Value = "Заказы после применения фильтров:";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.LightBlue;
+            worksheetMain.Cell("E" + row).Style.Fill.BackgroundColor = XLColor.LightBlue;
+            row ++;
             //создадим заголовки у столбцов
             worksheetMain.Cell("A" + row).Value = "Id";
+            worksheetMain.Cell("A" + row).Style.Fill.BackgroundColor = XLColor.Gray;
             worksheetMain.Cell("B" + row).Value = "Заказчик";
+            worksheetMain.Cell("B" + row).Style.Fill.BackgroundColor = XLColor.Gray;
             worksheetMain.Cell("C" + row).Value = "Машина";
+            worksheetMain.Cell("C" + row).Style.Fill.BackgroundColor = XLColor.Gray;
             worksheetMain.Cell("D" + row).Value = "Дата создания заказа";
+            worksheetMain.Cell("D" + row).Style.Fill.BackgroundColor = XLColor.Gray;
             worksheetMain.Cell("E" + row).Value = "Даза закрытия заказа";
+            worksheetMain.Cell("E" + row).Style.Fill.BackgroundColor = XLColor.Gray;
             worksheetMain.Cell("F" + row).Value = "Сумма";
+            worksheetMain.Cell("F" + row).Style.Fill.BackgroundColor = XLColor.Gray;
             row++;
 
             var table = worksheetMain.Range("A"+row+":F" + (row+orders.Count));
             table.Style.Border.RightBorder = XLBorderStyleValues.Thin;
             table.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
 
-            
+
             double globalSum = 0;
             foreach(OrderDto od in orders)
             {
@@ -478,16 +519,20 @@ namespace Business.Services
             }
             worksheetMain.Cell("E" + row).Value = "Выручка:";
             worksheetMain.Cell("E" + row).Style.Fill.BackgroundColor = XLColor.Green;
+            worksheetMain.Cell("E" + row).Style.Font.FontColor = XLColor.White;
             //worksheet.Cell("F" + row).Value = ;
             //worksheetMain.Cell("F" + row).FormulaA1 = $"=СУММ(F2:F{(row - 1)})";
             worksheetMain.Cell("F" + row).Value = globalSum;
             worksheetMain.Cell("F" + row).Style.Fill.BackgroundColor = XLColor.Green;
+            worksheetMain.Cell("F" + row).Style.Font.FontColor = XLColor.White;
+
+            profitCell.Value = globalSum;
 
             worksheetDetailed.Cell("E" + rowForDetailed).Style.Fill.BackgroundColor = XLColor.Green;
             worksheetDetailed.Cell("E" + rowForDetailed).Value = "Выручка:";
             worksheetDetailed.Cell("F" + rowForDetailed).Style.Fill.BackgroundColor = XLColor.Green;
             worksheetDetailed.Cell("F" + rowForDetailed).Value = globalSum;
-            
+
 
             worksheetMain.Column("C").Width = 14;
             worksheetMain.Column("D").Width = 20;

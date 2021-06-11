@@ -41,7 +41,7 @@
         </div>
     </form>
     <table class="table table-condensed table-striped">
-        <thead><tr><th>Id</th><th>Имя</th><th>Услуги</th><th></th></tr></thead>
+        <thead><tr><th>Имя</th><th>Услуги</th><th></th></tr></thead>
         <tbody>
         </tbody>
     </table>
@@ -160,9 +160,9 @@
             const tr = document.createElement("tr");
             tr.setAttribute("data-rowid", user.id);
 
-            const idTd = document.createElement("td");
-            idTd.append(user.id);
-            tr.append(idTd);
+            //const idTd = document.createElement("td");
+            //idTd.append(user.id);
+            //tr.append(idTd);
 
             const nameTd = document.createElement("td");
             nameTd.append(user.name);
