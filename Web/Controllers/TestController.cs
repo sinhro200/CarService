@@ -113,7 +113,7 @@ namespace Web.Controllers
                             Id = s.OrderServiceStatus.Id,
                             Title = s.OrderServiceStatus.Title
                         },
-                        Mechanic = s.Mechanic == null ? null : new UserDto
+                        Mechanic = s.Mechanic == null ? null : new MechanicDto
                         {
                             Id = s.Mechanic.Id,
                             Name = s.Mechanic.Name

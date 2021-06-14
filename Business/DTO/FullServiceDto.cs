@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace Business.DTO
 {
-    public class FullServiceDto
+    public class FullServiceDto : ServiceDto
     {
-        public int ServiceId { get; set; }
+        //public int ServiceId { get; set; }
 
-        public string Title { get; set; }
+        //public string Title { get; set; }
 
-        public double Price { get; set; }
+        //public double Price { get; set; }
 
-        public UserDto Mechanic { get; set; }
+        public MechanicDto Mechanic { get; set; }
 
         public FullServiceStatusDto Status { get; set; }
 

@@ -18,5 +18,6 @@ namespace Business.Interfaces
         List<FullServiceDto> ServicesForOrder(int orderId);
         MemoryStream ToXml(List<OrderDto> orders, OrderFilterDto orderFilter);
         void TryCloseOrder(int orderId);
+        OrderFilterStatisticDto StatisticOrdersWithFilter(OrderFilterDto orderFilterDto);
     }
 }

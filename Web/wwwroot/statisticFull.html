@@ -42,7 +42,7 @@
 
     <div id="headerContent" class="container panel-body"></div>
 
-    <h2>Заказы</h2>
+    <h2 >Заказы</h2>
     <form name="itemForm">
         <div class="form-group col-md-5">
             <label for="userSelect"><h5>Выбор владельца</h5></label>
@@ -84,51 +84,28 @@
             <!--<a id="reset" class="btn btn-primary">Сбросить</a>-->
         </div>
     </form>
-    <h3>Выручка по механикам</h3>
-    <table id="mechToProfitTable" class="table table-condensed table-striped">
+    <table id="dataTable" class="table table-condensed table-striped">
         <!--class="col-md-6"-->
-        <thead>
-            <tr>
-                <th>Механик</th>
-                <th>Выручка</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-    <h3>Выручка с клиентов</h3>
-    <table id="userToProfitTable" class="table table-condensed table-striped">
-        <!--class="col-md-6"-->
-        <thead>
-            <tr>
-                <th>Клиент</th>
-                <th>Выручка</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-    <h3>Частота заказа услуг</h3>
-    <table id="serviceToCountTable" class="table table-condensed table-striped">
-        <!--class="col-md-6"-->
-        <thead>
-            <tr>
-                <th>Услуга</th>
-                <th>Количество</th>
-            </tr>
-        </thead>
+        <thead><tr>
+            <th  ><div id="ownerBtn" class="btn btn-light">Владелец</div></th>
+            <th >Машина</th>
+            <th ><div id="creationOrderBtn" class="btn btn-light">Создание</div></th>
+            <th ><div id="closedOrderBtn" class="btn btn-light">Завершение</div></th>
+            <th ><div id="priceBtn" class="btn btn-light">Сумма</div></th>
+            <th></th>
+            </tr></thead>
         <tbody>
         </tbody>
     </table>
     <script>
-
+        
         $('#creationDatetimepickerMin').datetimepicker({ footer: true, modal: true });
         $('#creationDatetimepickerMax').datetimepicker({ footer: true, modal: true });
 
         $('#closeDatetimepickerMin').datetimepicker({ footer: true, modal: true });
         $('#closeDatetimepickerMax').datetimepicker({ footer: true, modal: true });
 
-        function serverStringFromPickerString(str) {
+        function serverStringFromPickerString(str){
             return moment(str, "HH:mm MM DD YYYY ").format()
         }
 
@@ -148,7 +125,7 @@
 
         function getClosedDateTimeMin() {
             let pickerValue = $('#closeDatetimepickerMin')[0].value;
-            if (pickerValue)
+            if(pickerValue)
                 return serverStringFromPickerString(pickerValue);
             return null;
         }
@@ -165,8 +142,6 @@
         const carId = urlParams.get('carId')
         const userId = urlParams.get('userId')
 
-        var GStat = null;
-
         var lastSendData = null;
         async function GetData(userIds = null, modelIds = null, finishingOrderStatus = 1) {
             let bodyData = JSON.stringify({
@@ -180,69 +155,80 @@
             });
             lastSendData = bodyData;
             console.log("sending req to get orders with filters :" + bodyData)
-            const response = await fetch("/Order/statisticWithFilters", {
+            const response = await fetch("/Order/withFilters", {
                 method: "POST",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
                 body: bodyData
             });
             if (response.ok === true) {
-                const statistic = await response.json();
-                console.log("Got statistic from server " + JSON.stringify(statistic) + " as response on get order statistic by filter");
-                GStat = statistic;
+                const orders = await response.json();
+                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by filter");
+                let rows = document.querySelector("tbody");
 
-                let mechToProfitRows = $("#mechToProfitTable")[0].querySelector("tbody");
-                clearTable("mechToProfitTable");
-
-                Object.entries(statistic.mechanicIdToProfitMap)
-                    .sort(function (a, b) {
-                        return b[1] - a[1];
-                    })
-                    .forEach(item => {
-                        let mechId = item[0];
-                        let profit = item[1];
-                        //let mechName = statistic.mechanicIdToMechanicMap[mechId].name;
-                        mechToProfitRows.append(
-                            mechanicToProfitRow(statistic.mechanicIdToMechanicMap[mechId],profit)
-                        )
-                    })
-
-                let userToProfitRows = $("#userToProfitTable")[0].querySelector("tbody");
-                clearTable("userToProfitTable");
-
-                Object.entries(statistic.userIdToProfitMap)
-                    .sort(function (a, b) {
-                        return b[1] - a[1];
-                    })
-                    .forEach(item => {
-                        let userId = item[0];
-                        let profit = item[1];
-                        userToProfitRows.append(
-                            userToProfitRow(statistic.userIdToUserMap[userId], profit)
-                        )
-                    })
-
-                let serviceToCountRows = $("#serviceToCountTable")[0].querySelector("tbody");
-                clearTable("serviceToCountTable");
-
-                Object.entries(statistic.serviceIdToCountMap)
-                    .sort(function (a, b) {
-                        return b[1] - a[1];
-                    })
-                    .forEach(item => {
-                        let serviceId = item[0];
-                        let count = item[1];
-                        let service = statistic.serviceIdToServiceMap[serviceId];
-                        service.id = service.serviceId;
-                        serviceToCountRows.append(
-                            serviceToCountRow(service, count)
-                        )
-                    })
-
+                clearTable();
+                orders.forEach(item => {
+                    rows.append(row(item));
+                });
             } else {
                 alert("Err on server." + response.status);
             }
         }
 
+        async function GetLastDataOrdering(orderCode, isAsc) {
+            console.log("sending req to get orders with filters :" + lastSendData + ". Ordering params :" + orderCode + " " + isAsc);
+            const response = await fetch("/Order/withFiltersOrdering/" + orderCode+"/"+isAsc, {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: lastSendData
+            });
+            if (response.ok === true) {
+                const orders = await response.json();
+                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by filter");
+                let rows = document.querySelector("tbody");
+                clearTable();
+                orders.forEach(item => {
+                    rows.append(row(item));
+                });
+            }
+        }
+
+        var lastIsAsc = true;
+        var isNameAsc = true;
+        var isPriceAsc = true;
+        var isCreationAsc = true;
+        var isCloseAsc = true;
+        var lastClickOrderingCode = 0;
+        $("#ownerBtn").click(function () {
+            if (lastClickOrderingCode == 1)
+                isNameAsc = !isNameAsc;
+            lastClickOrderingCode = 1;
+            lastIsAsc = isNameAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isNameAsc);
+        });
+
+        $("#priceBtn").click(function () {
+            if (lastClickOrderingCode == 2)
+                isPriceAsc = !isPriceAsc;
+            lastClickOrderingCode = 2;
+            lastIsAsc = isPriceAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isPriceAsc);
+        });
+          
+        $("#creationOrderBtn").click(function () {
+            if (lastClickOrderingCode == 3)
+                isCreationAsc = !isCreationAsc;
+            lastClickOrderingCode = 3;
+            lastIsAsc = isCreationAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isCreationAsc);
+        });
+
+        $("#closedOrderBtn").click(function () {
+            if (lastClickOrderingCode == 4)
+                isCloseAsc = !isCloseAsc;
+            lastClickOrderingCode = 4;
+            lastIsAsc = isCloseAsc;
+            GetLastDataOrdering(lastClickOrderingCode, isCloseAsc);
+        });
         //async function GetItem(id) {
         //    const response = await fetch("/brand/get/" + id, {
         //        method: "GET",
@@ -316,52 +302,92 @@
             $("#userSelect").val(null).trigger('change');
             $("#modelSelect").val(null).trigger('change');
         }
+        // создание строки для таблицы
+        function row(item) {
 
-        function mechanicToProfitRow(mechanic,profit) {
             const tr = document.createElement("tr");
-            tr.setAttribute("data-rowid", mechanic.id);
+            tr.setAttribute("data-rowid", item.id);
 
-            const mechTd = document.createElement("td");
-            mechTd.append(mechanic.name);
-            tr.append(mechTd);
+            ////order id
+            //const idTd = document.createElement("td");
+            //idTd.append(item.id);
+            //tr.append(idTd);
 
-            const profitTd = document.createElement("td");
-            profitTd.append(profit);
-            tr.append(profitTd);
+            //order car owner
+            const ownerTd = document.createElement("td");
+            const ownerStr = item.car.owner.name;
+            ownerTd.append(ownerStr);
+            tr.append(ownerTd);
+
+            //order car
+            const carTd = document.createElement("td");
+            const carStr = item.car.model.brandDto.title + " " + item.car.model.title;
+            carTd.append(carStr);
+            tr.append(carTd);
+
+            //order create date time
+            const createDateTimeTd = document.createElement("td");
+            let createMoment = moment(item.createDateTime);
+            const createDateTimeStr = createMoment.format("DD.MM.YYYY, HH:mm:ss");
+            createDateTimeTd.append(createDateTimeStr);
+            tr.append(createDateTimeTd);
+
+            //order close date time
+            const closeDateTimeTd = document.createElement("td");
+            if (item.closedDateTime) {
+                let closeMoment = moment(item.closedDateTime);
+                const closeDateTimeStr = closeMoment.format("DD.MM.YYYY, HH:mm:ss");
+                closeDateTimeTd.append(closeDateTimeStr)
+            } 
+            tr.append(closeDateTimeTd);
+
+            //order sum price
+            const priceTd = document.createElement("td");
+            var sumPrice = 0;
+            for (let s of item.services) {
+                sumPrice += s.price;
+            }
+            priceTd.append(sumPrice);
+            tr.append(priceTd);
+
+            //create order datetime
+            //const createDatetimeTd = document.createElement("td");
+            //let createMoment = moment(item.createDateTime);
+            //let createDateTime = createMoment.format("DD.MM.YYYY, HH:mm:ss");
+            //createDatetimeTd.append(createDateTime);
+            //tr.append(createDatetimeTd);
+
+            //status with close order datetime?
+            const statusTd = document.createElement("td");
+            if (item.isClosed) {
+                statusTd.append("Завершён");
+            } else {
+                statusTd.append("В процессе");
+            }
+            tr.append(statusTd);
+
+            //const sumPriceTd = document.createElement("td");
+            //var sumPrice = 0;
+            //for (let serv of item.services) {
+            //    sumPrice += serv.price;
+            //}
+            //sumPriceTd.append(sumPrice);
+            //tr.append(sumPriceTd);
+
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", item.id);
+            editLink.setAttribute("href", "/userOrder.html?orderId=" + item.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Подробнее");
+            linksTd.append(editLink);
+
+            tr.appendChild(linksTd);
 
             return tr;
         }
-
-        function userToProfitRow(user, profit) {
-            const tr = document.createElement("tr");
-            tr.setAttribute("data-rowid", user.id);
-
-            const userTd = document.createElement("td");
-            userTd.append(user.name);
-            tr.append(userTd);
-
-            const profitTd = document.createElement("td");
-            profitTd.append(profit);
-            tr.append(profitTd);
-
-            return tr;
-        }
-
-        function serviceToCountRow(service, cnt) {
-            const tr = document.createElement("tr");
-            tr.setAttribute("data-rowid", service.id);
-
-            const serviceTd = document.createElement("td");
-            serviceTd.append(service.title);
-            tr.append(serviceTd);
-
-            const cntTd = document.createElement("td");
-            cntTd.append(cnt);
-            tr.append(cntTd);
-
-            return tr;
-        }
-
         // сброс значений формы
         //document.getElementById("reset").click(function (e) {
 
@@ -432,8 +458,8 @@
             }
         }
 
-        function clearTable(tableId) {
-            $("#" + tableId+" tbody tr").remove();
+        function clearTable() {
+            $("#dataTable tbody tr").remove(); 
         }
 
         document.forms["itemForm"].addEventListener("submit", e => {
@@ -450,8 +476,8 @@
         });
 
         async function downloadXml() {
-            console.log("sending req to get orders as xml with filters :" + lastSendData + ". Ordering params : orderingCode=2, isAsk=false");
-            fetch("/Order/withFiltersOrderingAsXml/2/false", {
+            console.log("sending req to get orders as xml with filters :" + lastSendData + ". Ordering params :" + lastClickOrderingCode + " " + lastIsAsc);
+            fetch("/Order/withFiltersOrderingAsXml/" + lastClickOrderingCode + "/" + lastIsAsc, {
                 method: "POST",
                 headers: { "Accept": "application/json", "Content-Type": "application/json" },
                 body: lastSendData

@@ -99,6 +99,15 @@ namespace Web.Controllers
         }
 
         [HttpPost]
+        [Route("statisticWithFilters")]
+        public IActionResult GetWithFiltersStatistic(OrderFilterDto orderFilterDto)
+        {
+            _logger.LogInformation($"Got req to get orders statistic with filter :{orderFilterDto}");
+            OrderFilterStatisticDto orders = orderService.StatisticOrdersWithFilter(orderFilterDto);
+            return Ok(orders);
+        }
+
+        [HttpPost]
         [Route("withFiltersOrdering/{orderCode}/{isAsc}")]
         public IActionResult GetWithFiltersOrdering(int orderCode,bool isAsc, OrderFilterDto orderFilterDto)
         {

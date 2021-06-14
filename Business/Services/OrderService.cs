@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 
 namespace Business.Services
@@ -76,7 +77,7 @@ namespace Business.Services
                                       Id = s.OrderServiceStatus.Id,
                                       Title = s.OrderServiceStatus.Title
                                   },
-                                  Mechanic = s.Mechanic == null ? null : new UserDto
+                                  Mechanic = s.Mechanic == null ? null : new MechanicDto
                                   {
                                       Id = s.Mechanic.Id,
                                       Name = s.Mechanic.Name
@@ -339,8 +340,10 @@ namespace Business.Services
             }
 
             var workbook = new XLWorkbook();
-            var worksheetMain = workbook.Worksheets.Add("Сводная статистика");
+            var worksheetBrief = workbook.Worksheets.Add("Сводная статистика");
+            var worksheetMain = workbook.Worksheets.Add("Список заказов");
             var worksheetDetailed = workbook.Worksheets.Add("Подробная статистика");
+          
 
             int row = 1;
             int rowForDetailed = 3;
@@ -550,6 +553,58 @@ namespace Business.Services
             //rngTable.Style.Border.BottomBorder = XLBorderStyleValues.Thin;
 
             //worksheet.Columns().AdjustToContents(); //ширина столбца по содержимому
+            OrderFilterStatisticDto stat = StatisticOrdersWithFilter(orderFilters);
+            int briefRow = 1;
+            worksheetBrief.Cell("C" + briefRow).Value = "Сводная статистика";
+            briefRow++;
+            worksheetBrief.Cell("A" + briefRow).Value = "Количество заказов:";
+            briefRow++;
+            worksheetBrief.Cell("B" + briefRow).Value = stat.OrderCount;
+            worksheetBrief.Cell("B" + briefRow).Style.Fill.BackgroundColor = XLColor.AppleGreen;
+            briefRow++;
+            worksheetBrief.Cell("A" + briefRow).Value = "Суммарная выручка:";
+            briefRow++;
+            worksheetBrief.Cell("B" + briefRow).Value = stat.Profit;
+            worksheetBrief.Cell("B"+ briefRow).Style.Fill.BackgroundColor = XLColor.AppleGreen;
+            briefRow+=2;
+
+
+            worksheetBrief.Cell("A" + briefRow).Value = "Выручка по механикам:";
+            briefRow++;
+            foreach (KeyValuePair<int, double> e in stat.MechanicIdToProfitMap)
+            {
+                worksheetBrief.Cell("B"+briefRow).Value = stat.MechanicIdToMechanicMap[e.Key].Name;
+                worksheetBrief.Cell("C" + briefRow).Value = e.Value;
+                worksheetBrief.Cell("C" + briefRow).Style.Fill.BackgroundColor = XLColor.AppleGreen;
+                briefRow++;
+            }
+            briefRow++;
+
+            worksheetBrief.Cell("A"+briefRow).Value = "Выручка по клиентам:";
+            briefRow++;
+            foreach (KeyValuePair<int, double> e in stat.UserIdToProfitMap)
+            {
+                worksheetBrief.Cell("B" + briefRow).Value = stat.UserIdToUserMap[e.Key].Name;
+                worksheetBrief.Cell("C" + briefRow).Value = e.Value;
+                worksheetBrief.Cell("C" + briefRow).Style.Fill.BackgroundColor = XLColor.AppleGreen;
+                briefRow++;
+            }
+            briefRow++;
+
+            worksheetBrief.Cell("A" + briefRow).Value = "Частота услуг:";
+            briefRow++;
+            foreach (KeyValuePair<int, int> e in stat.ServiceIdToCountMap)
+            {
+                worksheetBrief.Cell("A" + briefRow).Value = stat.ServiceIdToServiceMap[e.Key].Title;
+                worksheetBrief.Cell("C" + briefRow).Value = e.Value;
+                worksheetBrief.Cell("C" + briefRow).Style.Fill.BackgroundColor = XLColor.LightGreen;
+                briefRow++;
+            }
+            briefRow++;
+
+            worksheetBrief.Column("A").Width = 20;
+            worksheetBrief.Column("B").Width = 20;
+
 
 
             System.IO.MemoryStream stream = new System.IO.MemoryStream();
@@ -557,6 +612,96 @@ namespace Business.Services
 
             return stream;
             
+        }
+
+        public OrderFilterStatisticDto StatisticOrdersWithFilter(OrderFilterDto orderFilterDto)
+        {
+            
+            List<Order> foundUsingFilters = repository.FindBy(IsOrderOkPredicate(orderFilterDto));
+
+            Dictionary<int, MechanicDto> mechanicsById = new Dictionary<int, MechanicDto>();
+            Dictionary<int, UserDto> usersById = new Dictionary<int, UserDto>();
+            Dictionary<int, ServiceDto> servicesById = new Dictionary<int, ServiceDto>();
+
+            Dictionary<int, double> mechIdToProfit = new Dictionary<int, double>();
+            Dictionary<int, double> userIdToProfit = new Dictionary<int, double>();
+            Dictionary<int, int> servicesIdToCount = new Dictionary<int, int>();
+
+            List<OrderDto> afterFiltersDto = foundUsingFilters.ConvertAll(modelToDtoConverter.Invoke);
+
+            double globalProfit = 0;
+            foreach (OrderDto ord in afterFiltersDto)
+            {
+                double orderProfit = 0.0;
+                foreach(FullServiceDto os in ord.Services)
+                {
+                    if (os.Status.Id < 2)
+                        continue;
+                    if(os.Mechanic == null)
+                    {
+                        logger.LogCritical("OrderService has status 2[finished] but no mechanic, " + os );
+                        continue;
+                    }
+
+                    if (!mechIdToProfit.ContainsKey(os.Mechanic.Id))
+                    {
+                        mechIdToProfit[os.Mechanic.Id] = 0;
+                        mechanicsById[os.Mechanic.Id] = os.Mechanic;
+                    }
+                    mechIdToProfit[os.Mechanic.Id] += os.Price;
+
+                    
+
+                    if (!servicesIdToCount.ContainsKey(os.ServiceId))
+                    {
+                        servicesIdToCount[os.ServiceId] = 0;
+                        servicesById[os.ServiceId] = os;
+                    }
+                    servicesIdToCount[os.ServiceId] += 1;
+
+                    
+
+                    orderProfit += os.Price;
+                }
+                if (!userIdToProfit.ContainsKey(ord.Car.Owner.Id))
+                {
+                    userIdToProfit[ord.Car.Owner.Id] = 0;
+                    usersById[ord.Car.Owner.Id] = ord.Car.Owner;
+                }
+                userIdToProfit[ord.Car.Owner.Id] += orderProfit;
+
+                
+
+                globalProfit += orderProfit;
+            }
+
+            //Dictionary<MechanicDto, double> mechToProfit = new Dictionary<MechanicDto, double>();
+            //Dictionary<UserDto, double> userToProfit = new Dictionary<UserDto, double>();
+            //Dictionary<ServiceDto, int> servicesToCount = new Dictionary<ServiceDto, int>();
+
+            //foreach(KeyValuePair<int,double> p in mechIdToProfit)
+            //    mechToProfit[mechanicsById[p.Key]] = p.Value;
+            //foreach (KeyValuePair<int, double> p in userIdToProfit)
+            //    userToProfit[usersById[p.Key]] = p.Value;
+            //foreach (KeyValuePair<int, int> p in servicesIdToCount)
+            //    servicesToCount[servicesById[p.Key]] = p.Value;
+
+
+            OrderFilterStatisticDto result = new OrderFilterStatisticDto {
+                Profit = globalProfit,
+                OrderCount = afterFiltersDto.Count,
+                MechanicIdToProfitMap = mechIdToProfit,//.OrderByDescending(pair => pair.Value)
+                    //.ToDictionary(pair => pair.Key, pair => pair.Value),
+                UserIdToProfitMap = userIdToProfit,//.OrderByDescending(pair => pair.Value)
+                    //.ToDictionary(pair => pair.Key, pair => pair.Value),
+                ServiceIdToCountMap = servicesIdToCount,//.OrderByDescending(pair => pair.Value)
+                    //.ToDictionary(pair => pair.Key, pair => pair.Value),
+                MechanicIdToMechanicMap = mechanicsById,
+                ServiceIdToServiceMap = servicesById,
+                UserIdToUserMap = usersById
+            };
+
+            return result;
         }
     }
 }
