@@ -19,6 +19,10 @@
     <script src="https://unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
     <link href="https://unpkg.com/gijgo@1.9.13/css/gijgo.min.css" rel="stylesheet" type="text/css" />
 
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.25/sc-2.0.4/datatables.min.css" />
+
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.25/sc-2.0.4/datatables.min.js"></script>
+
     <script>
         $(function () {
             $("#headerContent").load("headerContent.html");
@@ -86,14 +90,17 @@
     </form>
     <table id="dataTable" class="table table-condensed table-striped">
         <!--class="col-md-6"-->
-        <thead><tr>
-            <th  ><div id="ownerBtn" class="btn btn-light">Владелец</div></th>
-            <th >Машина</th>
-            <th ><div id="creationOrderBtn" class="btn btn-light">Создание</div></th>
-            <th ><div id="closedOrderBtn" class="btn btn-light">Завершение</div></th>
-            <th ><div id="priceBtn" class="btn btn-light">Сумма</div></th>
-            <th></th>
-            </tr></thead>
+        <thead>
+            <tr>
+                <th><div id="ownerBtn" class="btn btn-light">Владелец</div></th>
+                <th>Машина</th>
+                <th><div id="creationOrderBtn" class="btn btn-light">Создание</div></th>
+                <th><div id="closedOrderBtn" class="btn btn-light">Завершение</div></th>
+                <th><div id="priceBtn" class="btn btn-light">Сумма</div></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
         <tbody>
         </tbody>
     </table>
@@ -162,13 +169,20 @@
             });
             if (response.ok === true) {
                 const orders = await response.json();
-                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by filter");
+                console.log("Got " + orders.length+" orders from server as response on get all orders by filter");
                 let rows = document.querySelector("tbody");
 
                 clearTable();
                 orders.forEach(item => {
                     rows.append(row(item));
                 });
+
+                refreshPagesTable();
+                //$("#dataTable").DataTable().draw();
+                //$("#dataTable").DataTable({
+                //    "ordering": false,
+                //    "info": false
+                //})
             } else {
                 alert("Err on server." + response.status);
             }
@@ -183,12 +197,19 @@
             });
             if (response.ok === true) {
                 const orders = await response.json();
-                console.log("Got orders from server " + JSON.stringify(orders) + " as response on get all orders by filter");
+                console.log("Got " + orders.length + "orders from server as response on get all orders by filter");
                 let rows = document.querySelector("tbody");
                 clearTable();
                 orders.forEach(item => {
                     rows.append(row(item));
                 });
+
+                refreshPagesTable();
+                //$("#dataTable").DataTable().draw();
+                //$("#dataTable").DataTable({
+                //    "ordering": false,
+                //    "info": false
+                //})
             }
         }
 
@@ -408,7 +429,7 @@
             if (response.ok === true) {
                 const models = await response.json();
                 clearModelSelect();
-                console.log("Got models from server " + JSON.stringify(models) + " as response on get all");
+                console.log("Got "+models.length+" models from server as response on get all");
                 var autoSelectDatas = [];
                 for (let m of models) {
                     const title = m.title;
@@ -439,7 +460,7 @@
             if (response.ok === true) {
                 const users = await response.json();
                 clearUserSelect();
-                console.log("Got users from server " + JSON.stringify(users) + " as response on get all");
+                console.log("Got "+users.length+" users from server as response on get all");
                 //var servicesSelectDatas = [];
                 var usersDatas = [];
                 for (let user of users) {
@@ -458,7 +479,39 @@
             }
         }
 
+        var table = null;
+
+        function refreshPagesTable() {
+            //var dataSet = [];
+            //let tb = $("#dataTable tbody")[0];
+            //for (let tr of tb.children) {
+            //    var rowDataSet = [];
+            //    for (let td of tr.cells) {
+            //        let tdStr = td.innerText;
+            //        rowDataSet.push(tdStr);
+            //    }
+            //    dataSet.push(rowDataSet);
+            //}
+
+            //var headersDataSet = [];
+
+            //let th = $("#dataTable thead")[0];
+            //for (let htd of th.children[0].cells) {
+            //    headersDataSet.push({
+            //        title: htd.innerText
+            //    });
+            //}
+
+            table = $('#dataTable').DataTable({
+                ordering: false,
+                info: false,
+                searching: false,
+            });
+            $("#dataTable_wrapper").children()[0].remove();
+        }
+
         function clearTable() {
+            table.destroy();
             $("#dataTable tbody tr").remove(); 
         }
 
@@ -499,6 +552,10 @@
             loadModelSelect();
             loadUserSelect();
             GetData();
+            table = $("#dataTable").DataTable({
+                "ordering": false,
+                "info": false
+            })
         };
 
     </script>

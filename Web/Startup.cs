@@ -31,6 +31,7 @@ namespace Web
         {
             services.AddScoped<LoggerFactory>();
             services.AddScoped<UnitOfWork>();
+            services.AddScoped<XMLService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IBrandService, BrandService>();
             services.AddScoped<IModelService, ModelService>();

@@ -20,8 +20,9 @@ namespace Business.Services
         private readonly IRepository<Service> serviceRepository;
         private readonly IRepository<User> userRepository;
         private readonly IRepository<Model> modelRepository;
+        private readonly XMLService xMLService;
 
-        public OrderService(ILogger<OrderService> logger, UnitOfWork repos)
+        public OrderService(ILogger<OrderService> logger, UnitOfWork repos, XMLService xMLService)
             : base(repos.Orders, logger,
                   dto =>
                   {
@@ -108,6 +109,7 @@ namespace Business.Services
             this.serviceRepository = repos.Services;
             this.userRepository = repos.Users;
             this.modelRepository = repos.Models;
+            this.xMLService = xMLService;
         }
 
         public new OrderDto addItemReturning(OrderDto dto)
@@ -303,6 +305,7 @@ namespace Business.Services
             return foundUsingFilters.ConvertAll(modelToDtoConverter.Invoke);
         }
 
+        /*
         public MemoryStream ToXml(List<OrderDto> orders, OrderFilterDto orderFilters)
         {
             List<User> filterUsers;
@@ -340,8 +343,8 @@ namespace Business.Services
             }
 
             var workbook = new XLWorkbook();
-            var worksheetBrief = workbook.Worksheets.Add("Сводная статистика");
             var worksheetMain = workbook.Worksheets.Add("Список заказов");
+            var worksheetBrief = workbook.Worksheets.Add("Сводная статистика");
             var worksheetDetailed = workbook.Worksheets.Add("Подробная статистика");
           
 
@@ -613,7 +616,11 @@ namespace Business.Services
             return stream;
             
         }
-
+        */
+        public MemoryStream ToXml(List<OrderDto> orders, OrderFilterDto orderFilters)
+        {
+            return xMLService.GenerateXml(orders, orderFilters, StatisticOrdersWithFilter(orderFilters));
+        }
         public OrderFilterStatisticDto StatisticOrdersWithFilter(OrderFilterDto orderFilterDto)
         {
             
